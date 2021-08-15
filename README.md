@@ -463,4 +463,183 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     (s.len(), s)
   }
   ```
+* Instead of returning tuple like above, you could instead pass a `reference` of the variable to the function:
+  ```rust
+  fn main() {
+    let s1 = String::from("hello");
+
+    let len = calculate_length(&s1);
+
+    println!("The length of '{}' is {}.", s1, len);
+  }
+
+  fn calculate_length(s: &String) -> usize {
+      s.len()
+  }
+  ```
+* References allow you to refer to some value without taking ownership of it.
+* The `&s1` syntax lets us create a reference that refers to the value of `s1` but does not own it. 
+  * Because it does not own it, the value it points to will not be dropped when the reference goes out of scope.
+* The signature of the function uses `&` to indicate that the type of the parameter s is a reference.
+  ```rust
+  // s is a reference to a String
+  fn calculate_length(s: &String) -> usize { 
+    s.len()
+  } // Here, s goes out of scope. But because it does not have ownership of what it refers to, nothing happens.
+  ```
+* We call having references as function parameters **borrowing**. 
+  * Borrowed values can't be modified. So, modifying the string using reference parameters would cause an error:
+  ```rust
+  fn change(some_string: &String) {
+    some_string.push_str(", world");
+  }
+  ```
+  Error:
+  ```
+  error[E0596]: cannot borrow `*some_string` as mutable, as it is behind a `&` reference
+    |
+  7 | fn change(some_string: &String) {
+    |                        ------- help: consider changing this to be a mutable reference: `&mut String`
+  8 |     some_string.push_str(", world");
+    |     ^^^^^^^^^^^ `some_string` is a `&` reference, so the data it refers to cannot be borrowed as mutable
+  ```
+### Mutable references
+* You can make references as mutable by adding `mut` after `&`:
+  ```rust
+  fn change(some_string: &mut String) {
+    some_string.push_str(", world");
+  }
+  ```
+* You can have **only one mutable reference** to a particular piece of data <u>in a particular scope</u>. So, this will throw an error:
+  ```rust
+  let mut s = String::from("hello");
+
+  let r1 = &mut s;
+  let r2 = &mut s;
+
+  println!("{}, {}", r1, r2);
+  ```
+  Error:
+  ```
+  error[E0499]: cannot borrow `s` as mutable more than once at a time
+    |
+  4 |     let r1 = &mut s;
+    |              ------ first mutable borrow occurs here
+  5 |     let r2 = &mut s;
+    |              ^^^^^^ second mutable borrow occurs here
+  6 | 
+  7 |     println!("{}, {}", r1, r2);
+    |                        -- first borrow later used here
+
+  ```
+  * Benefits of this *one mutable reference in a scope* restriction:
+    * Rust can prevent data races at compile time.
+    * A data race is similar to a race condition and happens when these three behaviors occur:
+      * Two or more pointers access the same data at the same time.
+      * At least one of the pointers is being used to write to the data.
+      * There’s no mechanism being used to synchronize access to the data.
+* You can create new mutable reference inside a pair of curly braces, but you still can't have two simulatenous mutable references in the same block:
+  ```rust
+  let mut s = String::from("hello");
+  {
+      let r1 = &mut s;
+  } // r1 goes out of scope here, so we can make a new reference with no problems.
+
+  let r2 = &mut s;
+  ```
+* You cannot create a mutable reference if you have one or more immutable references in the same scope, *and* use that immutable reference later:
+  ```rust
+  let mut s = String::from("hello");
+
+  let r1 = &s; // no problem
+  let r2 = &s; // no problem
+  let r3 = &mut s; // BIG PROBLEM
+
+  // immutable reference r1 and r2 used after creating
+  // mutable reference r3
+  println!("{}, {}, and {}", r1, r2, r3);
+  ```
+  Error:
+  ```
+    error[E0502]: cannot borrow `s` as mutable because it is also borrowed as immutable
+  --> src/main.rs:6:14
+    |
+  4 |     let r1 = &s; // no problem
+    |              -- immutable borrow occurs here
+  5 |     let r2 = &s; // no problem
+  6 |     let r3 = &mut s; // BIG PROBLEM
+    |              ^^^^^^ mutable borrow occurs here
+  7 | 
+  8 |     println!("{}, {}, and {}", r1, r2, r3);
+    |                       -- immutable borrow later used here
+  ```
+  * You can use a mutable reference along with immutable references only when you no longer reference immutable references in the rest of the scope:
+  ```rust
+  let mut s = String::from("hello");
+
+  let r1 = &s; // no problem
+  let r2 = &s; // no problem
+  println!("{} and {}", r1, r2);
+  // r1 and r2 are no longer used after this point
+
+  let r3 = &mut s; // no problem
+  println!("{}", r3);
+  ```
+  * This works because a reference’s scope starts from where it is introduced and continues through the last time that reference is used.
+
+### Dangling References
+* In languages with pointers, it’s easy to erroneously create a **dangling pointer**, a pointer that references a location in memory that may have been given to someone else by freeing some memory. 
+* In Rust, by contrast, the compiler guarantees that references will never be dangling references.
+  * If you have a reference to some data, the compiler will ensure that the data will not go out of scope before the reference to the data does.
+* Example:
+  ```rust
+  fn main() {
+    let reference_to_nothing = dangle();
+  }
+
+  fn dangle() -> &String {
+      let s = String::from("hello");
+
+      &s
+  }
+  ```
+  Error thrown by compiler:
+  ```
+    |
+  5 | fn dangle() -> &String {
+    |                ^ expected named lifetime parameter
+    |
+    = help: this function's return type contains a borrowed value, but there is no value for it to be borrowed from
+  help: consider using the `'static` lifetime
+  ```
+  * Relevant error message: `this function's return type contains a borrowed value, but there is no value for it to be borrowed from`
+  * Here's `dangle` function with comments to explain the above error message:
+  ```rust
+  fn dangle() -> &String { // dangle returns a reference to a String
+
+    let s = String::from("hello"); // s is a new String
+
+    &s // we return a reference to the String, s
+  } // Here, s goes out of scope, and is dropped. 
+  // Its memory goes away. Danger!
+  ```
+  * As you can see, since the variable owning the `String` is dropped at the end of the function, `&s` would create a reference to invalid memory location.
+    * Rust stops you from creating such references by throwing compile-time error with the above error message.
+
+## The Slice Type
+* The **slice** data type let you reference a contiguous sequence of elements in a collection rather than the whole collection.
+  * You can't have ownership of this data type.
+
+## Structs
+* Structs are like class in Java and C++
+* Example:
+  ```rust
+  struct User {
+    username: String,
+    email: String,
+    sign_in_count: u64,
+    active: bool,
+  }
+  ```
+* Like tuple, you can have multiple data types. Unlike tuples, you can name individual data.
 * 
