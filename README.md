@@ -629,6 +629,113 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 ## The Slice Type
 * The **slice** data type let you reference a contiguous sequence of elements in a collection rather than the whole collection.
   * You can't have ownership of this data type.
+* A string slice is a reference to part of a String:
+  ```rust
+  let s = String::from("hello world");
+
+  let hello = &s[0..5];
+  let world = &s[6..11];
+  ```
+* Slice is defined as `[starting_index..ending_index]`:
+  * `starting_index` is inclusive
+  * `ending_index` is exclusive.
+  * e.g. `&s[0..5]` above will result in "hello" (index 0 to index 4, 5 is excluded)
+* Example of valid slice:
+  ```rust
+  let slice = &s[..2]; // 0 to 2
+  let slice = &s[2..]; // 2 to len - 1
+  let slice = &s[..]; // 0 to len - 1
+  ```
+* In memory, slice is stored as the reference of the starting point of the slice and number of elements in it.
+  * For example, `&s[2..4]` slice is stored as reference to index 2 of String `s` and number of elements (2);
+* String slice range indices must occur at valid UTF-8 character boundaries.
+  * If not, then the program will panic (Rust's way of throwing unhandled runtime error)
+* Suppose we want to return the first word in a string. If no space in string, then return the entire string. Using slice, we can do as follows:
+  ```rust
+  fn first_word(s: &String) -> &str {
+    let bytes = s.as_bytes();
+
+    // iter() returns each element.
+    // enumerate() transforms each element into a tuple of
+    // (index, reference of element)
+    for (i, &item) in bytes.iter().enumerate() {
+        // b' ' converts char ' ' into its byte equivalent
+        if item == b' ' {
+            return &s[0..i];
+        }
+    }
+
+    &s[..]
+  }
+
+  fn main() {
+    let mut s = String::from("hello world");
+
+    let word = first_word(&s);
+
+    println!("the first word is: {}", word);
+  }
+  ```
+* Now, in the above `main` function, if you were to clear `s` you would run into error.
+  ```rust
+  fn main() {
+    let mut s = String::from("hello world");
+
+    let word = first_word(&s);
+
+    s.clear(); // error!
+
+    println!("the first word is: {}", word);
+  }
+  ```
+  Error:
+  ```
+    error[E0502]: cannot borrow `s` as mutable because it is also borrowed as immutable
+    --> src/main.rs:18:5
+     |
+  16 |     let word = first_word(&s);
+     |                     -- immutable borrow occurs here
+  17 | 
+  18 |     s.clear(); // error!
+     |     ^^^^^^^^^ mutable borrow occurs here
+  19 | 
+  20 |     println!("the first word is: {}", word);
+     |                   ---- immutable borrow later used here
+
+  ```
+  * The error occurs because `word` contains immutable reference to the string and while its still in use, we call `s.clear()` which does mutable borrow.
+  * If `first_word` returned the end index of the first word, then `word` would still contain the index even after `s` becomes empty, and that would create another bug (since we are trying to get 0 to non-zero index string out of an empty string)
+* The above `first_word`'s signature could be written as `fn first_word(s: &str) -> &str`. This way, `first_word` function can accept both `&String` and `&str`.
+* You can send slice of string `s` as arguments to `first_word`:
+  ```rust
+  fn main() {
+    // String type
+    let my_string = String::from("hello world");
+
+    // first_word works on slices of `String`s
+    let word = first_word(&my_string[..]);
+
+    // str type 
+    let my_string_literal = "hello world"; 
+
+    // first_word works on slices of string literals
+    let word = first_word(&my_string_literal[..]);
+
+    // Because string literals *are* string slices already,
+    // this works too, without the slice syntax!
+    let word = first_word(my_string_literal);
+  }
+  ```
+* Array slices are also valid:
+  ```rust
+  let a = [1, 2, 3, 4, 5];
+
+  let slice = &a[1..3];
+
+  assert_eq!(slice, &[2, 3]);
+  ```
+  * This `slice` has the type &[i32]. 
+  * It works the same way as string slices do, by storing a reference to the first element and a length.
 
 ## Structs
 * Structs are like class in Java and C++
@@ -641,5 +748,259 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     active: bool,
   }
   ```
+  * Notice that comma at the end of `active` property? Yeah, that's allowed in Rust. In Java enums, that extra comma would have thrown a compilation error.
 * Like tuple, you can have multiple data types. Unlike tuples, you can name individual data.
-* 
+* Create an instance of struct `User`:
+  ```rust
+  let user1 = User {
+      email: String::from("someone@example.com"),
+      username: String::from("someusername123"),
+      active: true,
+      sign_in_count: 1,
+  };
+  ```
+  * This would create an immutable reference of `User` instance.
+* To create mutable reference, add `mut`:
+  ```rust
+  let mut user1 = User {
+      email: String::from("someone@example.com"),
+      username: String::from("someusername123"),
+      active: true,
+      sign_in_count: 1,
+  };
+
+  user1.email = String::from("anotheremail@example.com");
+  ```
+  * Note that the entire instance must be mutable; Rust doesn’t allow us to mark only certain fields as mutable.
+* No default constructors in Rust for struct types. By convention, you can create functions called `new` that would return instance of the struct.
+* Struct reference example:
+  ```rust
+  struct Rectangle {
+    width: u32,
+    height: u32,
+  }
+
+  fn main() {
+      let rect1 = Rectangle {
+          width: 30,
+          height: 50,
+      };
+
+      println!(
+          "The area of the rectangle is {} square pixels.",
+          area(&rect1)
+      );
+  }
+
+  fn area(rectangle: &Rectangle) -> u32 {
+      rectangle.width * rectangle.height
+  }
+  ```
+### Field Init Shorthand
+  ```rust
+  fn build_user(email: String, username: String) -> User {
+    User {
+        email,
+        username,
+        active: true,
+        sign_in_count: 1,
+    }
+  }
+  ```
+  * When Variable and Fields have same name, you can use just the property name as above.
+### Struct Update Syntax
+  ```rust
+  let user2 = User {
+      email: String::from("another@example.com"),
+      username: String::from("anotherusername567"),
+      ..user1
+  };
+  ```
+  * Rest of the values of `user2` would be used from `user1`.
+
+### Tuple Structs
+  ```rust
+  struct Color(i32, i32, i32);
+  struct Point(i32, i32, i32);
+
+  let black = Color(0, 0, 0);
+  let origin = Point(0, 0, 0);
+  ```
+  * Useful when you want to name a tuple, and naming each field would be verbose or redundant.
+  * Example:
+  ```rust
+  struct Dimension(u32, u32);
+
+  fn main() {
+    let rect1 = Dimension(30, 50);
+
+    println!(
+        "The area of the rectangle is {} square pixels.",
+        area(rect1)
+    );
+  }
+
+  fn area(dimensions: Dimension) -> u32 {
+      dimensions.0 * dimensions.1
+  }
+  ```   
+
+### Unit-Like Structs
+  *  You can define structs that don’t have any fields.
+  *  These are called unit-like structs because they behave similarly to (), the unit type. 
+  *  Useful when you need to implement a trait but don’t have any data you want to store in it.
+
+### Debug structs
+* When you try to print a struct as below:
+  ```rust
+  struct Rectangle {
+    width: u32,
+    height: u32,
+  }
+
+  fn main() {
+      let rect1 = Rectangle {
+          width: 30,
+          height: 50,
+      };
+
+      println!("rect1 is {}", rect1);
+  }
+  ```
+  the program throws an error:
+  ```
+  error[E0277]: `Rectangle` doesn't implement `std::fmt::Display`
+  ```
+  * All primitive types implement `Display` trait because they can be shown in just one way. Structs do not.
+* To print struct for debugging, you need to explicity use derived traits as `Debug` on a struct as follows:
+  ```rust
+  #[derive(Debug)]
+  struct Rectangle {
+      width: u32,
+      height: u32,
+  }
+
+  fn main() {
+      let rect1 = Rectangle {
+          width: 30,
+          height: 50,
+      };
+
+      println!("rect1 is {:?}", rect1);
+  }
+  ```
+  Output: 
+  ```
+  rect1 is Rectangle { width: 30, height: 50 }
+  ```
+  * To pretty print struct, use `{:#?}` instead in `println!` macro.
+    * Output: 
+      ```
+      rect1 is Rectangle {
+          width: 30,
+          height: 50,
+      }
+      ```
+
+### Methods
+* Methods are similar to functions, but are defined in structs and the first parameter is always 
+  * `self` (take ownership) or 
+  * `&self` (immutable borrow) or 
+  * `&mut self` (mutable borrow).
+* Example:
+  ```rust
+  #[derive(Debug)]
+  struct Rectangle {
+      width: u32,
+      height: u32,
+  }
+
+  impl Rectangle {
+      fn area(&self) -> u32 {
+          self.width * self.height
+      }
+  }
+
+  fn main() {
+      let rect1 = Rectangle {
+          width: 30,
+          height: 50,
+      };
+
+      println!(
+          "The area of the rectangle is {} square pixels.",
+          rect1.area()
+      );
+  }
+  ```
+  * Methods are defined in `impl` (implementation) blocks for a given struct.
+* Methods with paramters:
+  * Example: You want to check whether one rectangle can hold the other
+    ```rust
+    impl Rectangle {
+        fn can_hold(&self, other: &Rectangle) -> bool {
+            self.width > other.width && self.height > other.height
+        }
+    }
+
+    fn main() {
+      let rect1 = Rectangle {
+        width: 30,
+        height: 50,
+      };
+      let rect2 = Rectangle {
+          width: 10,
+          height: 40,
+      };
+      println!("Can rect1 hold rect2? {}", rect1.can_hold(&rect2));
+    }
+    ```
+* A struct can have multiple `impl` blocks:
+  ```rust
+  impl Rectangle {
+    fn area(&self) -> u32 {
+        self.width * self.height
+    }
+  }
+
+  impl Rectangle {
+      fn can_hold(&self, other: &Rectangle) -> bool {
+          self.width > other.width && self.height > other.height
+      }
+  }
+  ```
+
+### Automatic referencing and dereferencing
+  * When you call a method with `object.something()`, Rust automatically adds in `&`, `&mut`, or `*` so object matches the signature of the method. 
+  * In other words, the following are the same:
+    ```rust
+    p1.distance(&p2);
+    (&p1).distance(&p2);
+    ```
+  * This automatic referencing behavior works because methods have a clear receiver—the type of `self`. 
+  * Given the receiver and name of a method, Rust can figure out definitively whether the method is reading (`&self`), mutating (`&mut self`), or consuming (`self`). 
+
+### Associated functions
+* These functions are part of structs but don't have `self` or its variants as first parameters.
+* These are like static methods in Java.
+* These are called **associated functions** because they’re associated with the struct. 
+* They’re still functions, not methods, because they don’t have an instance of the struct to work with. 
+* Associated functions are often used for constructors that will return a new instance of the struct. Example:
+  ```rust
+  impl Rectangle {
+    fn square(size: u32) -> Rectangle {
+        Rectangle {
+            width: size,
+            height: size,
+        }
+    }
+  }
+  fn main() {
+    let square = Rectangle::square(3);
+  }
+  ```
+  * To call a associated function, we use the `::` syntax with the struct name.
+
+## Enums and Pattern Matching
+* Rust’s enums are most similar to algebraic data types in functional languages, such as F#, OCaml, and Haskell. Good.
+
