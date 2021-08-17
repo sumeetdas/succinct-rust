@@ -1002,5 +1002,74 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * To call a associated function, we use the `::` syntax with the struct name.
 
 ## Enums and Pattern Matching
-* Rust’s enums are most similar to algebraic data types in functional languages, such as F#, OCaml, and Haskell. Good.
+* Rust’s enums are most similar to **algebraic data types** in functional languages, such as F#, OCaml, and Haskell. 
+  * Algebraic data types are made up of sum and product types (hence the word *algebraic*).
+  * Product types
+    * These are data types which contain one or more data of different types *at the same time*. 
+    * Rust's tuple is one such example. Tuple allows data of different types to exist at the same time in one tuple instance.
+  * Sum types
+    * These types can be thought of union of different data types.
+    * Example: `type c = a | b` in languages like OCaml allows us to identify instance of `a` or `b` as instance of `c`.
+    * No equivalent type in Java AFAIK. This type is supported in Rust in the form of enums.
+* Example of enum:
+  ```rust
+  enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32),
+  }
 
+  impl Message {
+    fn call(&self) {
+      //..
+    }
+  }
+
+  fn main() {
+    let m = Message::Write(String::from("hello"));
+    m.call();
+  }
+  ```
+  * In this example, enum `Message` is a sum type of the following types: `Quit`, `Move`, `Write`, `ChangeColor`.
+    * Its like creating different structs for each of the above four types.
+  * You can add methods to an enum via `impl` blocks (same as in structs)
+  * Access enum types via `::` operator (since enum types are like associated functions in structs; enum `Message` serves as namespace for these four enum types).
+
+### Option Enum
+* Null values are PITA to deal with (myself coming from Java background, so I know).
+* Rust has no concept of null values. Instead, we use `Option` enum:
+  ```rust
+  enum Option<T> {
+    Some(T),
+    None,
+  }
+  ```
+  * T is like generic parameters in Java. T could be replaced by any type.
+* `Option` enum is available in Rust programs by default (included in the prelude), so don't have to import it.
+* Examples of using `Option` enum:
+  ```rust
+  let some_number = Some(5);
+  let some_string = Some("a string");
+
+  let absent_number: Option<i32> = None;
+  ```
+  * Notice that when assigning `None` to a variable, you need to specify the variable's data type. Rust couldn't have inferred the type `T` in `Option` enum otherwise.
+* Why `Option` is better than `null`:
+  ```rust
+  let x: i8 = 5;
+  let y: Option<i8> = Some(5);
+
+  let sum = x + y;
+  ```
+  * In Rust, this would throw a <u>compilation error</u>, as `x` and `y` are of two different types (`x` is `i8` and `y` is `Option<i8>`)
+  * In Java, similar scenario involving null values would be allowed during compile time only to see an error during runtime. Try this code out:
+  ```java
+  public static void main(String[] args) {
+          Integer x = 0;
+          Integer y = null;
+          Integer z = x + y;
+  }
+  ```
+
+ 
