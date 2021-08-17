@@ -1101,6 +1101,50 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * `Coin::Penny` is called pattern
     * 1 is some code you need to execute or return (as in this case)
   * You could enclose multiple lines of code inside curly braces in a match arm, as done in case of `Coin::Nickel` above.
+* `Option` matching example:
+  ```rust
+  fn plus_one(x: Option<i32>) -> Option<i32> {
+      match x {
+          None => None,
+          Some(i) => Some(i + 1),
+      }
+  }
+
+  let five = Some(5);
+  let six = plus_one(five);
+  let none = plus_one(None);
+  ```
+* Matches are **exhaustive**. You must include all possible values of the enum type or else the code won't compile.
+  * The following code will throw an error:
+    ```rust
+    fn plus_one(x: Option<i32>) -> Option<i32> {
+        match x {
+            Some(i) => Some(i + 1),
+        }
+    }
+    ```
+    Error
+    ```
+    error[E0004]: non-exhaustive patterns: `None` not covered
+    --> src/main.rs:3:15
+        |
+    3   |         match x {
+        |               ^ pattern `None` not covered
+        |
+        = help: ensure that all possible cases are being handled, possibly by adding wildcards or more match arms
+        = note: the matched value is of type `Option<i32>`
+    ```
+* In case if you don't want to add all possible enum types, you could instead use special pattern `_`:
+  ```rust
+  let num_to_str = match input_num {
+      1 => "one",
+      3 => "three",
+      5 => "five",
+      7 => "seven",
+      _ => "default",
+  };
+  ``` 
+  * For `input_num` values not equal to either 1, 3, 5, or 7, the `match` expression would return `"default"` and gets stored in `num_to_str` variable.
 
 ### Patterns that Bind to Values
 * Match arms can bind to the parts of the values that match the pattern.
@@ -1136,3 +1180,28 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * When we compare that value with each of the match arms, none of them match until we reach `Coin::Quarter(state)`. 
   * At that point, the binding for `state` will be the value `UsState::Alaska`. 
 
+### if let syntax
+* If you want to execute some code just for one match arm and ignore the rest, then you can use `if let` syntax.
+* Example: You have a match expression like this:
+  ```rust
+  let num_to_str = match input_num {
+      1 => "one",
+      3 => "three",
+      5 => "five",
+      7 => "seven",
+      _ => "default",
+  };
+  ```
+  * If you just want to deal with pattern `7` and ignore the rest, you could use `if let`:
+    ```rust
+    let num_to_str = if let 7 = input_num {
+      "seven"
+    }
+    else {
+      "default"
+    }
+    ```
+
+## Packages, Crates and Modules
+
+### Packages
