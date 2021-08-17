@@ -1036,7 +1036,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * You can add methods to an enum via `impl` blocks (same as in structs)
   * Access enum types via `::` operator (since enum types are like associated functions in structs; enum `Message` serves as namespace for these four enum types).
 
-### Option Enum
+### `Option` Enum
 * Null values are PITA to deal with (myself coming from Java background, so I know).
 * Rust has no concept of null values. Instead, we use `Option` enum:
   ```rust
@@ -1072,4 +1072,67 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
- 
+### `match` control flow
+* You can do pattern matching on enum types via `match` operator.
+  * Somewhat similar to switch/case in Java, but more powerful as it can match types
+* Example:
+  ```rust
+  enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter,
+  }
+
+  fn value_in_cents(coin: Coin) -> u8 {
+      match coin {
+          Coin::Penny => 1,
+          Coin::Nickel => {
+            println!("coin type is Nickel");
+            5
+          },
+          Coin::Dime => 10,
+          Coin::Quarter => 25,
+      }
+  }
+  ```
+  * This will match different enum types and then return value mapped to a given type. For example, if coin is of type `Penny`, `value_in_cents` will return 1.
+  * Each of the lines in `match` block like `Coin::Penny => 1` is called a **match arm**.
+    * `Coin::Penny` is called pattern
+    * 1 is some code you need to execute or return (as in this case)
+  * You could enclose multiple lines of code inside curly braces in a match arm, as done in case of `Coin::Nickel` above.
+
+### Patterns that Bind to Values
+* Match arms can bind to the parts of the values that match the pattern.
+* Example:
+  ```rust
+  #[derive(Debug)] 
+  enum UsState {
+    Alabama,
+    Alaska,
+    // --snip--
+  }
+
+  enum Coin {
+      Penny,
+      Nickel,
+      Dime,
+      Quarter(UsState),
+  }
+
+  fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => 1,
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter(state) => {
+            println!("State quarter from {:?}!", state);
+            25
+        }
+    }
+  }
+  ```
+  * If we were to call `value_in_cents(Coin::Quarter(UsState::Alaska))`, coin would be `Coin::Quarter(UsState::Alaska)`. 
+  * When we compare that value with each of the match arms, none of them match until we reach `Coin::Quarter(state)`. 
+  * At that point, the binding for `state` will be the value `UsState::Alaska`. 
+
