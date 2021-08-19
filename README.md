@@ -134,6 +134,23 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   Inside da_func()
   ```
 * You can define function with parameters as: `fn da_func(x:i32, y:i32) { ...}`. Note that data types for function parameters (like `x` and `y` here) is required.
+* You can create functions inside a function:
+  ```rust
+  fn main() {
+    fn factorial(num: i32) -> i32 {
+      if num <= 1 {
+        1
+      }
+      else {
+        factorial(num - 1) + factorial(num - 2)
+      }
+    }
+
+    print!("Factorial of 5: {}", factorial(5));
+  }
+  ```
+  * Advantage of creating function instead of closures (called as lambdas in JS, Java and other languages) is that you can call these functions recursively (as `factorial` function above).
+  * No performance penalty for using function inside function, as they are [static](https://www.reddit.com/r/rust/comments/22km6a/functions_inside_functions/cgntp3c/?utm_source=reddit&utm_medium=web2x&context=3) (TODO: need more explanation here).
 
 ### Expressions and Statements
 * In Rust, everything to the RHS of `=` is considered to be an expression.
@@ -1204,4 +1221,211 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 
 ## Packages, Crates and Modules
 
-### Packages
+### Packages and Crates
+* A **crate** is a binary or library. 
+* The **crate root** is a source file that the Rust compiler starts from and makes up the root module of your crate.
+* A **package** is one or more crates that provide a set of functionality. 
+  * A package contains a **Cargo.toml** file that describes how to build those crates.
+  * Rules of package:
+    * Must contain at least one crate (library or binary)
+    * Must contain zero or one library.
+    * Can contain several binary crates.
+    * Can contain both library and binary crates
+* Create a new package using `cargo new` command:
+  ```bash
+  $ cargo new my-project
+     Created binary (application) `my-project` package
+  $ ls my-project
+  Cargo.toml
+  src
+  $ ls my-project/src
+  main.rs
+  ```
+  * `Cargo.toml` is created, giving us a package.
+  * No `src/main.rs` is mentioned in the contents of `Cargo.toml` file. 
+    * This is because Rust follows a convention that `src/main.rs` is the crate root of a <u>binary crate</u> with the <u>same name</u> as the package.
+  * If the package directory contains `src/lib.rs`, that becomes the crate root of a <u>library crate</u> with the <u>same name</u> as the package.
+* Cargo passes the crate root files to `rustc` to build the library or binary.
+* If a package contains `src/main.rs` and `src/lib.rs`, it has two crates: a library and a binary, both with the same name as the package. 
+* A package can have multiple binary crates by placing files in the `src/bin` directory: each file will be a separate binary crate.
+* Crates provide namespace to functions that we create, thereby resolving any name conflicts.
+  * For example, we create a `struct Rng` and then we import a crate `rand` which also has a struct named `Rng`
+  * Since crates create namespaces, there won't be any conflict.
+  * In our crate, it refers to the struct `Rng` that we defined. 
+  * We would access the `Rng` trait from the `rand` crate as `rand::Rng`.
+
+### Modules
+* **Modules** let us organize code within a crate into groups for readability and easy reuse. 
+* Modules also control the *privacy* of items, which is whether an item: 
+  * can be used by outside code (**public**) or 
+  * is an internal implementation detail and not available for outside use (**private**).
+* For example, create a new library named `restaurant` by running `cargo new --lib restaurant`, and then add the following code to `src/lib.rs` file:
+  ```rust
+  mod front_of_house {
+    mod hosting {
+        fn add_to_waitlist() {}
+
+        fn seat_at_table() {}
+    }
+
+    mod serving {
+        fn take_order() {}
+
+        fn serve_order() {}
+
+        fn take_payment() {}
+    }
+  }
+  ```
+  * We defined a module via `mod` keyword followed by the name of the module (e.g. `mod front_of_house`)
+  * Module can contain other modules, structs, enums, etc.
+* Module name follows snake case convention (e.g. `snake_case`)
+* By using modules, we can group related definitions together and name why they’re related.
+* `src/main.rs` and `src/lib.rs` are called crate roots because the contents of either of these two files form a module named `crate` at the <u>root</u> of the crate’s module structure, known as the **module tree**.
+  * For example, module tree of above `restaurant` library:
+    ```
+    crate
+    └── front_of_house
+        ├── hosting
+        │   ├── add_to_waitlist
+        │   └── seat_at_table
+        └── serving
+            ├── take_order
+            ├── serve_order
+            └── take_payment
+    ```
+  * If module A is contained inside module B, we say that module A is the **child** of module B and that module B is the **parent** of module A. 
+    * `front_of_house` is parent of `hosting`, and `hosting` is child of `front_of_house`.
+  * Those which are defined in the same module are called **siblings**.
+    * `hosting` and `serving` are siblings.
+  * Notice that the entire module tree is rooted under the *implicit module* named `crate`.
+
+### Paths for Referring to an Item in the Module Tree
+* To show Rust where to find an item in a module tree, we use a **path** in the same way we use a path when <u>navigating a filesystem</u>. 
+* A path can take two forms:
+  * An **absolute path** starts from a crate root by using a crate name or a literal crate.
+  * A **relative path** starts from the *current module* and uses `self`, `super`, or an identifier in the current module.
+* Both absolute and relative paths are followed by one or more identifiers separated by double colons (`::`).
+* Example:
+  ```rust
+  mod front_of_house {
+    mod hosting {
+        fn add_to_waitlist() {}
+    }
+  }
+
+  pub fn eat_at_restaurant() {
+      // Absolute path
+      crate::front_of_house::hosting::add_to_waitlist();
+
+      // Relative path
+      front_of_house::hosting::add_to_waitlist();
+  }
+  ```
+* Running the above code will give error:
+  ```
+  error[E0603]: module `hosting` is private
+  --> src/lib.rs:9:28
+    |
+  9 |     crate::front_of_house::hosting::add_to_waitlist();
+    |                            ^^^^^^^ private module
+    |
+  note: the module `hosting` is defined here
+  --> src/lib.rs:2:5
+    |
+  2 |     mod hosting {
+    |     ^^^^^^^^^^^
+
+  ```
+  * This is because everything in a module is *private* by default.
+* Modules define Rust's privacy boundary.
+  * Modules are how encapsulation is supported in Rust - hide implementation details and expose only what's needed.
+  * All items in a module like structs, functions, etc. are private by default.
+  * Items in a parent module can’t use the private items <u>inside child modules</u>, but items in child modules can use the items in their ancestor modules. 
+    * The reason is that child modules wrap and hide their implementation details, but the child modules can see <u>the context</u> in which they’re defined.
+
+### Exposing Paths with the pub Keyword
+* To provide access to inner members of a module, use `pub` keyword. Example:
+  ```rust
+  mod front_of_house {
+    pub mod hosting {
+        fn add_to_waitlist() {}
+    }
+  }
+
+  pub fn eat_at_restaurant() {
+      crate::front_of_house::hosting::add_to_waitlist();
+  }
+  ```
+* The above example still won't compile as `add_to_waitlist` is not declared as `pub`.
+  * Changing `fn add_to_waitlist()` to `pub fn add_to_waitlist()` will compile the code.
+
+### Starting Relative Paths with super
+* You can access parent module contents via `super` keyword
+  * Its like doing `cd ..` in bash to go up to parent directory.
+* Example:
+  ```rust
+  fn serve_order() {}
+
+  mod back_of_house {
+      fn fix_incorrect_order() {
+          cook_order();
+          super::serve_order();
+      }
+
+      fn cook_order() {}
+  }
+  ```
+  * Here, `super` will take compiler to search for `serve_order` function in parent module of `back_of_house`. In this case, it does find the function and hence code compiles.
+
+### Making Structs and Enums Public
+* When you make structs public in a module, the struct's fields and methods are still private.
+* #RustPattern: If you want to make a struct field immutable, just leave it as private and provide a getter method (or accessor) to get the field value:
+  ```rust
+  mod company {
+    pub struct Employee {
+        name: String
+    }
+    impl Employee {
+        pub fn new(name: String) -> Employee {
+            Employee {
+                name
+            }
+        }
+        pub fn get_name(&self) -> &String {
+            &self.name
+        }
+    }
+  }
+
+  fn main() {
+    let employee = company::Employee::new(String::from("Jethalal"));
+    // cannot create instance of Employee here as name is private. So below code will result in error
+    /*
+    let employee = company::Employee {
+      name: String::from("Jethalal")
+    };
+    */
+
+    // trying to set employee name would throw error, as name is not visible
+    // employee.name = "Ramesh";
+    println!("name: {}", employee.get_name());
+  }
+  ```
+* When you make enums public, all its variants (or enum types) become public. Example:
+  ```rust
+  mod back_of_house {
+    pub enum Appetizer {
+        Soup,
+        Salad,
+    }
+  }
+
+  pub fn eat_at_restaurant() {
+      let order1 = back_of_house::Appetizer::Soup;
+      let order2 = back_of_house::Appetizer::Salad;
+  }
+  ```
+
+ 
+
