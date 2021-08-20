@@ -1588,7 +1588,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
   and you want to split it into different files for each module.
-* In Rust, modules can be stored in `<module-name>.rs` or create a directory called `<module-name>` and then store it in `<module-name>/lib.rs`.
+* In Rust, modules can be stored in `<module-name>.rs` or create a directory called `<module-name>` and then store it in `<module-name>/mod.rs`.
 * So, our file structure looks like:
   * `src/lib.rs`:
     ```rust
@@ -1604,7 +1604,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     ```
     * `mod` followed by `<module-name>` and a semicolon `;` (e.g. `mod front_of_house;`) tells Rust to load that module file into scope.
     * There won't be any change to `use` statement with the refactoring of code into multiple files. 
-  * `src/front_of_house/lib.rs`
+  * `src/front_of_house/mod.rs`
     ```rust
     pub mod hosting;
     ```
@@ -1612,4 +1612,112 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     ```rust
     pub fn add_to_waitlist() {}
     ```
+
+## Collections
+* Collections are data structures that contain multiple values.
+* The data is stored on the heap, which means the amount of data does not need to be known at compile time and can grow or shrink as the program runs.
+* Types of collections:
+  * A *vector* allows you to store a variable number of values next to each other.
+  * A *string* is a collection of characters. 
+  * A *hash map* allows you to associate a value with a particular key. It’s a particular implementation of the more general data structure called a map.
+
+### Vectors
+* Vector, or `Vec<T>`, allows you to store more than one value in a single data structure that puts all the values next to each other in memory. 
+* Vectors can only store values of the same type.
+* Create a new vector:
+  ```rust
+  // immutable vector of integers
+  let v: Vec<i32> = Vec::new();
+  // immutable vector of integers 1,2 and 3
+  let v = vec![1,2,3];
+  ```
+* Updating a vector:
+  ```rust
+  let mut v = Vec::new();
+
+  v.push(5);
+  v.push(6);
+  v.push(7);
+  v.push(8);
+  ```
+  * To push elements to a vector, add `mut` while declaring the vector.
+* Dropping a vector drops its elements:
+  ```rust
+  {
+      let v = vec![1, 2, 3, 4];
+
+      // do stuff with v
+  } // <- v goes out of scope and is freed here
+  ```
+* Reading elements of vectors:
+  ```rust
+  let v = vec![1, 2, 3, 4, 5];
+
+  let third: &i32 = &v[2];
+  println!("The third element is {}", third);
+
+  match v.get(2) {
+      Some(third) => println!("The third element is {}", third),
+      None => println!("There is no third element."),
+  }
+  ```
+  * Index in vector starts from 0.
+  * `&v[100]` in above example would result in `panic` and thus crashing the program.
+  * `v.get(100)` would return `None` and need to handle it accordingly.
+* You cannot have mutable and immutable references in the same scope:
+  ```rust
+  let mut v = vec![1, 2, 3, 4, 5];
+
+  let first = &v[0];
+
+  v.push(6);
+
+  println!("The first element is: {}", first);
+  ```
+  Error:
+  ```
+    error[E0502]: cannot borrow `v` as mutable because it is also borrowed as immutable
+  --> src/main.rs:6:5
+    |
+  4 |     let first = &v[0];
+    |                  - immutable borrow occurs here
+  5 | 
+  6 |     v.push(6);
+    |     ^^^^^^^^^ mutable borrow occurs here
+  7 | 
+  8 |     println!("The first element is: {}", first);
+    |                 ----- immutable borrow later used here
+  ```
+  * vector's `push` method can result in copying elements to new memory space, and thus `first` will point to invalid memory location.
+  * Borrowing rules helps in avoiding this issue.
+* Iterating over the values in vector:
+  ```rust
+  let v = vec![100, 32, 57];
+  for i in &v {
+      println!("{}", i);
+  }
+  ```
+* To mutate vector values while iterating:
+  ```rust
+  let mut v = vec![100, 32, 57];
+  for i in &mut v {
+      *i += 50;
+  }
+  ```
+  * To change the value that the mutable reference refers to, we have to use the dereference operator (`*`) to get to the value in `i` before we can use the `+=` operator.
+* Vector of enums:
+  ```rust
+  enum SpreadsheetCell {
+      Int(i32),
+      Float(f64),
+      Text(String),
+  }
+
+  let row = vec![
+      SpreadsheetCell::Int(3),
+      SpreadsheetCell::Text(String::from("blue")),
+      SpreadsheetCell::Float(10.12),
+  ];
+  ```
+
 
