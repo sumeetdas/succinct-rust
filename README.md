@@ -1512,4 +1512,104 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     }
     ```
 
+### Using External Packages
+* When you add a dependency via `Cargo.toml`:
+  ```
+  [dependencies]
+  algorithms = "0.1.1"
+  ```
+  you tell Cargo to download the `algorithm` package and its dependencies and make this external package available to our project.
+* We can `use` the `algorithm` crate in any Rust project file as follows:
+  ```rust
+  use algorithms;
+
+  fn main() {
+      let factorial_of_5 = algorithms::factorial(5);
+  }
+  ```
+* The standard library (`std`) is also a crate that’s external to our package. 
+  * Because the standard library is shipped with the Rust language, we don’t need to change Cargo.toml to include `std`.
+  * But we do need to refer to it with `use` to bring items from there into our package’s scope:
+    ```rust
+    use std::collections::HashMap;
+    ```
+    * This is an absolute path starting with `std`, the name of the standard library crate.
+
+### Nested paths
+* If we're using multiple items in the same crate or module, we can use nested paths. For example, we can write this:
+  ```rust
+  // --snip--
+  use std::cmp::Ordering;
+  use std::io;
+  // --snip--
+  ```
+  as
+  ```rust
+  // --snip--
+  use std::{cmp::Ordering, io};
+  // --snip--
+  ```
+* If two `use` statements share a subpath like below:
+  ```rust
+  use std::io;
+  use std::io::Write;
+  ```
+  we can write it as:
+  ```rust
+  use std::io::{self, Write};
+  ```
+
+### Glob operator
+* If we want to bring *all* public items defined in a path into scope, we can specify that path followed by `*`, the glob operator:
+  ```rust
+  use std::collections::*;
+  ```
+* This use statement brings all public items defined in `std::collections` into the current scope. 
+* Caution - Glob can make it harder to tell 
+  * what names are in scope
+  * where a name used in your program was defined
+* Its often used when testing to bring everything under test into the `tests` module.
+
+### Separating Modules into Different Files
+* You've got this code:
+  ```rust
+  mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+  }
+
+  use self::front_of_house::hosting;
+
+  pub fn eat_at_restaurant() {
+      hosting::add_to_waitlist();
+      hosting::add_to_waitlist();
+      hosting::add_to_waitlist();
+  }
+  ```
+  and you want to split it into different files for each module.
+* In Rust, modules can be stored in `<module-name>.rs` or create a directory called `<module-name>` and then store it in `<module-name>/lib.rs`.
+* So, our file structure looks like:
+  * `src/lib.rs`:
+    ```rust
+    mod front_of_house;
+
+    use crate::front_of_house::hosting;
+
+    pub fn eat_at_restaurant() {
+        hosting::add_to_waitlist();
+        hosting::add_to_waitlist();
+        hosting::add_to_waitlist();
+    }
+    ```
+    * `mod` followed by `<module-name>` and a semicolon `;` (e.g. `mod front_of_house;`) tells Rust to load that module file into scope.
+    * There won't be any change to `use` statement with the refactoring of code into multiple files. 
+  * `src/front_of_house/lib.rs`
+    ```rust
+    pub mod hosting;
+    ```
+  * `src/front_of_house/hosting.rs`
+    ```rust
+    pub fn add_to_waitlist() {}
+    ```
 
