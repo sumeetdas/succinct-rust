@@ -1427,5 +1427,89 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
- 
+### `use` keyword
+* We can bring a path into a scope once and then call the items in that path as if they’re local items with the `use` keyword. Example:
+  ```rust
+  mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+  }
+
+  use crate::front_of_house::hosting;
+
+  pub fn eat_at_restaurant() {
+      hosting::add_to_waitlist();
+      hosting::add_to_waitlist();
+      hosting::add_to_waitlist();
+  }
+  ``` 
+  * By adding `use crate::front_of_house::hosting` in the crate root, `hosting` is now a valid name in that scope, just as though the `hosting` module had been defined in the crate root. 
+  * Paths brought into scope with `use` also check privacy, like any other paths.
+* You can also bring an item into scope with use and a relative path:
+  ```rust
+  mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+  }
+
+  use self::front_of_house::hosting;
+
+  pub fn eat_at_restaurant() {
+      hosting::add_to_waitlist();
+      hosting::add_to_waitlist();
+      hosting::add_to_waitlist();
+  }
+  ```
+* You could have specified `use self::front_of_house::hosting::add_to_waitlist` and directly use `add_to_waitlist` function:
+  ```rust
+  use crate::front_of_house::hosting::add_to_waitlist;
+
+  pub fn eat_at_restaurant() {
+      add_to_waitlist();
+  }
+  ```
+  * However, its unclear where the `add_to_wishlist` function is located (same module or different).
+    * This can get more confusing when source code size increase.
+  * So, the idiomatic way to bring functions from other module is to bring just the parent module path to the scope (`use self::front_of_house::hosting`) and then call the function (`hosting::add_to_waitlist()`).
+* Idiomatic way of bringing structs, enums and other items is to specify its full path:
+  ```rust
+  use std::collections::HashMap;
+
+  fn main() {
+      let mut map = HashMap::new();
+      map.insert(1, 2);
+  }
+  ```
+  * Here, we specify the full path 
+* If you're bringing two structs of same name but from different modules, then bring just the parent modules into scope:
+  ```rust
+  use std::fmt;
+  use std::io;
+
+  fn function1() -> fmt::Result {
+      // --snip--
+  }
+
+  fn function2() -> io::Result<()> {
+      // --snip--
+  }
+  ```
+  * Here, we are using `Result` struct from two different modules by bringing parent modules `std::fmt` and `std::io` into scope.  
+  * If we brought `Result` via complete path like `use std::fmt::Result`, then Rust wouldn't know which `Result` struct to use.
+  * If you still want to use complete path, then alias the other structs via `as` keyword:
+    ```rust
+    use std::fmt::Result;
+    use std::io::Result as IoResult;
+
+    fn function1() -> Result {
+        // --snip--
+    }
+
+    fn function2() -> IoResult<()> {
+        // --snip--
+    }
+    ```
+
 
