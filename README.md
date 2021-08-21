@@ -1880,6 +1880,163 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
 * Rust standard library doesn't provide grapheme cluster iteration functionality as it is complex.
 
+## HashMaps
+* The type `HashMap<K, V>` stores a mapping of keys of type `K` to values of type `V`. 
+* It does this via a *hashing function*, which determines how it places these keys and values into memory. 
+* Creating a new hash map:
+  ```rust
+  use std::collections::HashMap;
+
+  let mut scores = HashMap::new();
+
+  scores.insert(String::from("Blue"), 10);
+  scores.insert(String::from("Yellow"), 50);
+  ```
+* Hash maps store their data on the heap.
+* Hash maps are homogeneous: all of the keys must have the same type, and all of the values must have the same type.
+* Creating hash map using `zip` and `collect` functions:
+  ```rust
+  use std::collections::HashMap;
+
+  let teams = vec![String::from("Blue"), String::from("Yellow")];
+  let initial_scores = vec![10, 50];
+
+  let mut scores: HashMap<_, _> =
+      teams.into_iter().zip(initial_scores.into_iter()).collect();
+  ```
+  * The type annotation `HashMap<_, _>` is needed here because it’s possible to `collect` into many different data structures and Rust doesn’t know which you want unless you specify.
+    * For the parameters for the key and value types, however, we use underscores, and Rust can infer the types that the hash map contains based on the types of the data in the vectors. 
+    * Here, key type would be `String` and the value type will be `i32`
+  * `zip` method is used to create a vector of tuples where team is paired with initial score (e.g. “Blue” is paired with 10).
+  * `collect` method to turns vector of tuples into a hash map.
+
+### Hash Maps and Ownership
+* For types that implement the `Copy` trait, like `i32`, the values are copied into the hash map. 
+* For owned values like `String`, the values will be moved and the hash map will be the owner of those values.
+* Example:
+  ```rust
+  use std::collections::HashMap;
+
+  let field_name = String::from("Favorite color");
+  let field_value = String::from("Blue");
+
+  let mut map = HashMap::new();
+  map.insert(field_name, field_value);
+  // field_name and field_value are invalid at this point, try using them and
+  // see what compiler error you get!
+  ```
+* If we insert references to values into the hash map, the values won’t be moved into the hash map. 
+  * The values that the references point to must be valid for at least as long as the hash map is valid.
+
+### Accessing Values in a Hash Map
+* Example:
+  ```rust
+  use std::collections::HashMap;
+
+  let mut scores = HashMap::new();
+
+  scores.insert(String::from("Blue"), 10);
+  scores.insert(String::from("Yellow"), 50);
+
+  let team_name = String::from("Blue");
+  let score = scores.get(&team_name);
+  ```
+  * Here, `score` will have the value that’s associated with the Blue team, and the result will be `Some(&10)`.
+  * The result is wrapped in `Some` because get returns an `Option<&V>`; if there’s no value for that key in the hash map, get will return `None`.
+* Iterate over key/value pair:
+  ```rust
+  use std::collections::HashMap;
+
+  let mut scores = HashMap::new();
+
+  scores.insert(String::from("Blue"), 10);
+  scores.insert(String::from("Yellow"), 50);
+
+  for (key, value) in &scores {
+      println!("{}: {}", key, value);
+  }
+  ```
+  Output:
+  ```
+  Yellow: 50
+  Blue: 10
+  ```
+
+### Updating a Hash Map
+* Overwriting a value:
+  * If we insert a key and a value into a hash map and then insert that same key with a different value, the value associated with that key will be replaced.
+  * Example:
+    ```rust
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Blue"), 25);
+
+    println!("{:?}", scores);
+    ```
+    Output:
+    ```
+    {"Blue": 25}
+    ```
+* Only Inserting a value if key has no value
+  * Can be done via `entry` followed by `or_insert` methods:
+    ```rust
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+    scores.insert(String::from("Blue"), 10);
+
+    scores.entry(String::from("Yellow")).or_insert(50);
+    scores.entry(String::from("Blue")).or_insert(50);
+
+    println!("{:?}", scores);
+    ```
+  * The return value of the `entry` method is an enum called `Entry` that represents a value that might or might not exist.
+  * If the key exists, the `or_insert` method on `Entry`:
+    * will return a mutable reference to the value for the corresponding `Entry` key, *or else*
+    * inserts the parameter as the new value for this key and returns a mutable reference to the new value. 
+  * Output of above code:
+    ```
+    {"Yellow": 50, "Blue": 10}
+    ```
+    * The first call to entry will insert the key for the Yellow team with the value 50 because the Yellow team doesn’t have a value already.
+    * The second call to entry will not change the hash map because the Blue team already has the value 10.
+
+### Updating a Value Based on the Old Value
+* Example:
+  ```rust
+  use std::collections::HashMap;
+
+  let text = "hello world wonderful world";
+
+  let mut map = HashMap::new();
+
+  for word in text.split_whitespace() {
+      let count = map.entry(word).or_insert(0);
+      *count += 1;
+  }
+
+  println!("{:?}", map);
+  ```
+  Output:
+  ```
+  {"world": 2, "hello": 1, "wonderful": 1}
+  ```
+  * `or_insert` method returns mutable reference to value for the key.
+  * To mutate the reference, use dereference operator (`*`) (e.g. `*count += 1` above)
+
+### Hashing Functions
+* By default, `HashMap` uses a hashing function called **SipHash** that can provide resistance to Denial of Service (DoS) attacks involving hash tables.
+* You can change hash function by specifying a different *hasher*.
+  * A **hasher** is a type that implements the `BuildHasher` trait.
+
+## Error Handling in Rust
+* There are two ways of handling errors in Rust:
+  * The `panic!` macro signals that your program is in a state it can’t handle and lets you tell the process to stop instead of trying to proceed with invalid or incorrect values.
+  * The `Result` enum uses Rust’s type system to indicate that operations might fail in a way that your code could recover from.
+
 
 
 
