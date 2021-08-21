@@ -1720,4 +1720,167 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ];
   ```
 
+## Strings
+* Rust has only one string type in the core language, which is the string slice `str` that is usually seen in its borrowed form `&str`. 
+* **String slices** - references to some UTF-8 encoded string data stored elsewhere
+  * For example: String literals are stored in the program’s binary and are therefore string slices.
+* The `String` type, which is provided by Rust’s standard library rather than coded into the core language, is a growable, mutable, owned, UTF-8 encoded string type.
+  * Strings in Rust usually refer to `String` type and `&str` string slice type.
+* Creating a new `String`:
+  ```rust
+  let mut s = String::new();
+  ```
+* Convert `str` literals to `String`:
+  ```rust
+  let s = "initial contents".to_string();
+  // or
+  let s = String::from("initial contents");
+  ```
+* Strings are UTF-8 encoded, so we can include any properly encoded data in them:
+  ```rust
+  let hello = String::from("नमस्ते");
+  ```
+* We can grow a String by using the push_str method to append a string slice:
+  ```rust
+  let mut s1 = String::from("foo");
+  let s2 = "bar";
+  s1.push_str(s2);
+  println!("s2 is {}", s2);
+  ```
+  * Since `push_str` function takes a string slice, the calling function doesn't lose ownership of `s2` and can thus print its value.
+* To append a character, use `push` function:
+  ```rust
+  let mut s = String::from("lo");
+  s.push('l');
+  ```
+  * `s` will contain `lol`
+
+### Concatenation with `+` operator
+* Example:
+  ```rust
+  let s1 = String::from("Hello, ");
+  let s2 = String::from("world!");
+  let s3 = s1 + &s2; // note s1 has been moved here and can no longer be used
+  ```
+* `+` operator uses the `add` method:
+  ```rust
+  fn add(self, s: &str) -> String {
+  ```
+* After `s3`, `s2` remains valid as `s2` was borrowed. However, `s1` becomes invalid since ownership was moved to `add` function.
+* Notice `&s2` is of type `&String`, but `add` accepts `&str` as second parameter. This works because Rust uses a **deref coercion** which turns `&s2` into `&s2[..]`.
+* `let s3 = s1 + &s2;` isn't making new strings, but rather:
+  * takes ownership of s1
+  * appends a copy of the contents of s2
+  * and then returns ownership of the result, thus making it more efficient than copying.
+
+### Concatenation with `format!` macro
+* Example:
+  ```rust
+  let s1 = String::from("tic");
+  let s2 = String::from("tac");
+  let s3 = String::from("toe");
+
+  let s = format!("{}-{}-{}", s1, s2, s3);
+  ```
+* The format!` macro works in the same way as `println!`, but instead of printing the output to the screen, it returns a String with the contents. 
+* The version of the code using `format!` is much easier to read and doesn’t take ownership of any of its parameters.
+
+### Indexing into strings
+* In Rust, indexing into strings will throw an error:
+  ```rust
+  let s1 = String::from("hello");
+  let h = s1[0];
+  ```
+  Error:
+  ```
+    error[E0277]: the type `String` cannot be indexed by `{integer}`
+  --> src/main.rs:3:13
+    |
+  3 |     let h = s1[0];
+    |             ^^^^^ `String` cannot be indexed by `{integer}`
+    |
+    = help: the trait `Index<{integer}>` is not implemented for `String`
+  ```
+* This is because Rust doesn't support indexing of strings. This is because of how `String`s are implemented in Rust.
+* Internal representation of `String`s
+  * A `String` is a wrapper over a `Vec<u8>`
+  * Example:
+    ```rust
+    let hello = String::from("Hola");
+    ```
+  * Here, `hello.len()` will be 4, which means the vector storing the string "Hola" is 4 bytes long. 
+    * Each of these letters takes 1 byte when encoded in UTF-8. 
+  * However, for this string:
+    ```rust
+    let hello = String::from("Здравствуйте");
+    ```
+    vector is 24 bytes long, not 12. This is because Cyrillic letters take 2 bytes of storage.
+  * Doing `&hello[0]` will return first byte value stored, not the character `З` (which is capital Cyrillic letter Ze).
+  * To avoid returning an unexpected value and causing bugs that might not be discovered immediately, Rust doesn’t compile code which does indexing like `&hello[0]`.
+* Another point about UTF-8 is that there are actually three relevant ways to look at strings from Rust’s perspective: 
+  * as bytes. 
+    * e.g. Hindi word `नमस्ते` as bytes:
+      ```
+      [224, 164, 168, 224, 164, 174, 224, 164, 184, 224, 165, 141, 224, 164, 164, 224, 165, 135]
+      ```
+  * scalar values
+    * e.g. Hindi word `नमस्ते` as Unicode scalar values:
+      ```
+      ['न', 'म', 'स', '्', 'त', 'े']
+      ```
+    * The fourth and sixth are not letters: they’re diacritics that don’t make sense on their own.
+  * grapheme clusters (the closest thing to what we would call letters).
+    * e.g. Hindi word `नमस्ते` as grapheme clusters:
+      ```
+      ["न", "म", "स्", "ते"]  
+      ```
+* Another reason against indexing into strings is indexing operations are expected to always take constant time (O(1)).
+  *  But it isn’t possible to guarantee that performance with a String, because Rust would have to walk through the contents from the beginning to the index to determine how many valid characters there were.
+* <u>Slicing strings</u> is allowed but should be used with caution.
+  * For example, the following code will panic:
+    ```rust
+    let hello = "Здравствуйте";
+    let s = &hello[0..1];
+    ```
+    Error:
+    ```
+    thread 'main' panicked at 'byte index 1 is not a char boundary; it is inside 'З' (bytes 0..2) of `Здравствуйте`', src/main.rs:4:14
+    ```
+  * Using `&hello[0..3]` works OK as Cyrillic characters are stored as 2 bytes.
+
+### Methods for Iterating over `String`s
+* To iterate over Unicode scalar values:
+  ```rust
+  for c in "नमस्ते".chars() {
+    println!("{}", c);
+  }
+  ```
+  Output:
+  ```
+  न
+  म
+  स
+   ्
+  त
+   े
+  ```
+* To iterate over bytes:
+  ```rust
+  for b in "नमस्ते".bytes() {
+    println!("{}", b);
+  }
+  ```
+  Output:
+  ```
+  224
+  164
+  // --snip--
+  165
+  135
+  ```
+* Rust standard library doesn't provide grapheme cluster iteration functionality as it is complex.
+
+
+
+
 
