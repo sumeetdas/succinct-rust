@@ -2102,6 +2102,18 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The source code information you see above (e.g. `at ./src/main.rs:4`) are called **debug symbols**.
   * Debug symbols are not present if you do `cargo build --release` or `cargo run --release`.
 
+### Unwinding the Stack or Aborting in Response to a Panic
+* By default, when a panic occurs, the program starts unwinding, which means Rust walks back up the stack and cleans up the data from each function it encounters. 
+  * But this walking back and cleanup is a lot of work. 
+* The alternative is to immediately abort, which ends the program without cleaning up. 
+  * Memory that the program was using will then need to be cleaned up by the operating system. 
+  * If in your project you need to make the <u>resulting binary</u> as small as possible, you can switch from unwinding to aborting upon a panic by adding `panic = 'abort'` to the appropriate `[profile]` sections in your `Cargo.toml` file. 
+  * For example, if you want to abort on panic in *release* mode, add this:
+    ```
+    [profile.release]
+    panic = 'abort'
+    ```
+
 ### Recoverable errors with `Result`
 * `Result` enum:
   ```rust
@@ -2200,7 +2212,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   thread 'main' panicked at 'Failed to open hello.txt: Error { repr: Os { code:
   2, message: "No such file or directory" } }', src/libcore/result.rs:906:4
   ```
-* **Pro tip**: Don't ever use `unwrap`. If you want to program to panic, use `expect` method. If you want to handle the errors, use `unwrap_or_else` method.
+* **Pro tip**: Don't ever use `unwrap` or `expect`, because that would make the program crash. Instead, use `unwrap_or_else` method to handle errors in code itself.
 
 ### Propagating Errors using `?` operator
 * Example:
@@ -2254,21 +2266,44 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The `Box<dyn Error>` type is called a **trait object**.
     * Here, it means “any kind of error.”
 
+## Generic Data Types
+* Generics are abstract stand-ins for concrete types or other properties (TODO: Need better definition).
+  * Similar to Java Generics
+* Generics help you to avoid code duplication by using same data structure or function for different data types.
 
+### Generics in Function definitions
+* 
 
+### Performance of Code Using Generics
+* Rust implements generics in such a way that your code doesn’t run any slower using generic types than it would with concrete types.
+* Rust accomplishes this by performing monomorphization of the code that is using generics at compile time. 
+* **Monomorphization** is the process of turning generic code into specific code by filling in the concrete types that are used when compiled.
+* Example:
+  ```rust
+  let integer = Some(5);
+  let float = Some(5.0);
+  ```
+  * When Rust compiles this code, it performs monomorphization. 
+  * During that process, the compiler reads the values that have been used in `Option<T>` instances and identifies two kinds of `Option<T>`: one is `i32` and the other is `f64`. 
+  * As such, it expands the generic definition of `Option<T>` into `Option_i32` and `Option_f64`, thereby replacing the generic definition with the specific ones.
+* Example of monomorphized `Option<T>` code:
+  ```rust
+  enum Option_i32 {
+    Some(i32),
+    None,
+  }
 
+  enum Option_f64 {
+      Some(f64),
+      None,
+  }
 
-
-### Unwinding the Stack or Aborting in Response to a Panic
-* By default, when a panic occurs, the program starts unwinding, which means Rust walks back up the stack and cleans up the data from each function it encounters. 
-  * But this walking back and cleanup is a lot of work. 
-* The alternative is to immediately abort, which ends the program without cleaning up. 
-  * Memory that the program was using will then need to be cleaned up by the operating system. 
-  * If in your project you need to make the <u>resulting binary</u> as small as possible, you can switch from unwinding to aborting upon a panic by adding `panic = 'abort'` to the appropriate `[profile]` sections in your `Cargo.toml` file. 
-  * For example, if you want to abort on panic in *release* mode, add this:
-    ```
-    [profile.release]
-    panic = 'abort'
-    ```
-
+  fn main() {
+      let integer = Option_i32::Some(5);
+      let float = Option_f64::Some(5.0);
+  }
+  ```
+* Because Rust compiles generic code into code that specifies the type in each instance, we pay no runtime cost for using generics. 
+* When the code runs, it performs just as it would if we had duplicated each definition by hand. 
+* The process of monomorphization makes Rust’s generics extremely efficient at runtime.
 
