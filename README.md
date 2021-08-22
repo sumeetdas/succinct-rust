@@ -2037,7 +2037,238 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The `panic!` macro signals that your program is in a state it can’t handle and lets you tell the process to stop instead of trying to proceed with invalid or incorrect values.
   * The `Result` enum uses Rust’s type system to indicate that operations might fail in a way that your code could recover from.
 
+### Unrecoverable Errors with panic!
+* When the panic! macro executes, your program will print a failure message, unwind and clean up the stack, and then quit.
+* This most commonly occurs when a bug of some kind has been detected and it’s not clear to the programmer how to handle the error.
+* Example:
+  ```rust
+  fn main() {
+    panic!("crash and burn");
+  }
+  ```
+  Error:
+  ```
+  thread 'main' panicked at 'crash and burn', src/main.rs:2:5
+  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+  ```
+  * The call to panic! causes the error message contained in the last two lines. 
+  * The first line shows our panic message (`'crash and burn'`) and the place in our source code where the panic occurred: `src/main.rs:2:5` indicates that it’s the second line, fifth character of our `src/main.rs` file.
+
+### Using a `panic!` backtrace
+* Consider the following code:
+  ```rust
+  fn main() {
+    let v = vec![1, 2, 3];
+
+    v[99];
+  }
+  ```
+  * Here, we’re attempting to access the 100th element of our vector (which is at index 99 because indexing starts at zero), but it has only 3 elements. 
+    * In this situation, Rust will panic. 
+* In C, attempting to read beyond the end of a data structure is undefined behavior. 
+  * You might get whatever is at the location in memory that would correspond to that element in the data structure, even though the memory doesn’t belong to that structure.
+  * This is called a **buffer overread** and can lead to security vulnerabilities if an attacker is able to manipulate the index in such a way as to read data they shouldn’t be allowed to that is stored after the data structure.
+* To protect from such vulnerabilities, Rust panics and crashes the program:
+  ```
+  thread 'main' panicked at 'index out of bounds: the len is 3 but the index is 99', src/main.rs:4:5
+  note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+  ```
+* Notice that the second line above tells us that we can set the `RUST_BACKTRACE` environment variable to get a backtrace of exactly what happened to cause the error.
+* A **backtrace** is a list of all the functions that have been called to get to this point. 
+  * Backtraces in Rust work as they do in other languages: the key to reading the backtrace is to start from the top and read until you see files you wrote. 
+* To get a backtrace, include `RUST_BACKTRACE=1` in `cargo run` command:
+  ```bash
+  $ RUST_BACKTRACE=1 cargo run
+  thread 'main' panicked at 'index out of bounds: the len is 3 but the index is 99', src/main.rs:4:5
+  stack backtrace:
+    0: rust_begin_unwind
+             at /rustc/7eac88abb2e57e752f3302f02be5f3ce3d7adfb4/library/std/src/panicking.rs:483
+    1: core::panicking::panic_fmt
+              at /rustc/7eac88abb2e57e752f3302f02be5f3ce3d7adfb4/library/core/src/panicking.rs:85
+    2: core::panicking::panic_bounds_check
+              at /rustc/7eac88abb2e57e752f3302f02be5f3ce3d7adfb4/library/core/src/panicking.rs:62
+    3: <usize as core::slice::index::SliceIndex<[T]>>::index
+              at /rustc/7eac88abb2e57e752f3302f02be5f3ce3d7adfb4/library/core/src/slice/index.rs:255
+    4: core::slice::index::<impl core::ops::index::Index<I> for [T]>::index
+              at /rustc/7eac88abb2e57e752f3302f02be5f3ce3d7adfb4/library/core/src/slice/index.rs:15
+    5: <alloc::vec::Vec<T> as core::ops::index::Index<I>>::index
+              at /rustc/7eac88abb2e57e752f3302f02be5f3ce3d7adfb4/library/alloc/src/vec.rs:1982
+    6: panic::main
+              at ./src/main.rs:4
+    7: core::ops::function::FnOnce::call_once
+              at /rustc/7eac88abb2e57e752f3302f02be5f3ce3d7adfb4/library/core/src/ops/function.rs:227
+    # rest of the backtrace
+  ```
+  * The source code information you see above (e.g. `at ./src/main.rs:4`) are called **debug symbols**.
+  * Debug symbols are not present if you do `cargo build --release` or `cargo run --release`.
+
+### Recoverable errors with `Result`
+* `Result` enum:
+  ```rust
+  enum Result<T, E> {
+    Ok(T),
+    Err(E),
+  }
+  ```
+  * `T` represents the type of the value that will be returned in a success case within the `Ok` variant, and 
+  * `E` represents the type of the error that will be returned in a failure case within the `Err` variant.
+* Usage of `Result` enum:
+  ```rust
+  use std::fs::File;
+
+  fn main() {
+      let f = File::open("hello.txt");
+
+      let f = match f {
+          Ok(file) => file,
+          Err(error) => panic!("Problem opening the file: {:?}", error),
+      };
+  }
+  ```
+  * `Result` don't need to be imported via `use` as its brought into scope via prelude.
+  * When the result is `Ok`, return the inner file value out of the `Ok` variant, and we then assign that file handle value to the variable `f`.
+  * The other arm of the match handles the case where we get an `Err` value from `File::open`. In this example, we’ve chosen to call the `panic!` macro.
+    * For example, the program will panic when `hello.txt` file does not exist.
+
+### Matching with different errors
+* Example:
+  ```rust
+  use std::fs::File;
+  use std::io::ErrorKind;
+
+  fn main() {
+      match File::open("hello.txt") {
+          Ok(file) => file,
+          Err(error) => match error.kind() {
+              ErrorKind::NotFound => match File::create("hello.txt") {
+                  Ok(fc) => fc,
+                  Err(e) => panic!("Problem creating the file: {:?}", e),
+              },
+              // capture all other errors in `other_error` variable
+              other_error => panic!("Problem opening the file: {:?}", other_error)
+          },
+      };
+  }
+  ```
+  * The type of the value that `File::open` returns inside the `Err` variant is `io::Error`, which is a struct provided by the standard library. 
+  * This struct has a method kind that we can call to get an `io::ErrorKind` value. 
+  * The enum `io::ErrorKind` is provided by the standard library and has variants representing the different kinds of errors that might result from an io operation. 
+  * The variant we want to use is `ErrorKind::NotFound`, which indicates the file we’re trying to open doesn’t exist yet. 
+  * So we match on `File::open("hello.txt")`, but we also have an inner match on `error.kind()`.
+* Using `unwrap_or_else` of `Result` enum to open or create file:
+  ```rust
+  use std::fs::File;
+  use std::io::ErrorKind;
+
+  fn main() {
+      File::open("hello.txt").unwrap_or_else(|error| match error.kind() {
+          ErrorKind::NotFound => File::create("hello.txt")
+              .unwrap_or_else(|error| panic!("Problem creating the file: {:?}", error),
+          other_error => panic!("Problem opening the file: {:?}", other_error)
+        }
+      );
+  }
+  ```
+  * This is more functional way of writing code, which removed one match expression and makes code more readable.
+
+### Shortcuts for Panic on Error: unwrap and expect
+* Example:
+  ```rust
+  use std::fs::File;
+
+  fn main() {
+      let f = File::open("hello.txt").unwrap();
+  }
+  ```
+  * If `hello.txt` is present, then `File` object is assigned to `f`.
+    * If not, program panics and crashes with following error:
+      ```
+      thread 'main' panicked at 'called `Result::unwrap()` on an `Err` value: Error {
+      repr: Os { code: 2, message: "No such file or directory" } }',
+      src/libcore/result.rs:906:4
+      ```
+* You could customize panic message via `expect` method:
+  ```rust
+  use std::fs::File;
+
+  fn main() {
+      let f = File::open("hello.txt").expect("Failed to open hello.txt");
+  }
+  ```
+  Output:
+  ```
+  thread 'main' panicked at 'Failed to open hello.txt: Error { repr: Os { code:
+  2, message: "No such file or directory" } }', src/libcore/result.rs:906:4
+  ```
+* **Pro tip**: Don't ever use `unwrap`. If you want to program to panic, use `expect` method. If you want to handle the errors, use `unwrap_or_else` method.
+
+### Propagating Errors using `?` operator
+* Example:
+  ```rust
+  use std::fs::File;
+  use std::io;
+  use std::io::Read;
+
+  fn read_username_from_file() -> Result<String, io::Error> {
+      let mut f = match File::open("hello.txt") {
+          Ok(file) => file,
+          Err(e) => Err(e),
+      };
+
+      let mut s = String::new();
+
+      match f.read_to_string(&mut s) {
+          Ok(_) => Ok(s),
+          Err(e) => Err(e),
+      }
+  }
+  ```
+* You can write this code consicely using `?` operator:
+  ```rust
+  use std::fs::File;
+  use std::io;
+  use std::io::Read;
+
+  fn read_username_from_file() -> Result<String, io::Error> {
+      let mut s = String::new();
+
+      File::open("hello.txt")?.read_to_string(&mut s)?;
+
+      Ok(s)
+  }
+  ```
+  * The `?` at the end of the `File::open` call will return the value inside an `Ok`. 
+  * If an error occurs, the `?` operator will return early out of the whole function and give any `Err` value to the calling code. 
+  * The same thing applies to the `?` at the end of the `read_to_string` call.
+* You can use `?` operator in `main` function as follows:
+  ```rust
+  use std::error::Error;
+  use std::fs::File;
+
+  fn main() -> Result<(), Box<dyn Error>> {
+      let f = File::open("hello.txt")?;
+
+      Ok(())
+  }
+  ```
+  * The `Box<dyn Error>` type is called a **trait object**.
+    * Here, it means “any kind of error.”
 
 
+
+
+
+
+### Unwinding the Stack or Aborting in Response to a Panic
+* By default, when a panic occurs, the program starts unwinding, which means Rust walks back up the stack and cleans up the data from each function it encounters. 
+  * But this walking back and cleanup is a lot of work. 
+* The alternative is to immediately abort, which ends the program without cleaning up. 
+  * Memory that the program was using will then need to be cleaned up by the operating system. 
+  * If in your project you need to make the <u>resulting binary</u> as small as possible, you can switch from unwinding to aborting upon a panic by adding `panic = 'abort'` to the appropriate `[profile]` sections in your `Cargo.toml` file. 
+  * For example, if you want to abort on panic in *release* mode, add this:
+    ```
+    [profile.release]
+    panic = 'abort'
+    ```
 
 
