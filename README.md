@@ -3130,6 +3130,93 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       * Therefore, Rust can’t make the assumption that converting an immutable reference to a mutable reference is possible.
 
 ## Running Code on Cleanup with the Drop Trait
+* `Drop` trait is the second trait to implement smart pointer pattern.
+* This trait lets you customize what happens when a value is about to go out of scope.
+* You can provide an implementation for the `Drop` trait on any type, and the code you specify can be used to release resources like files or network connections. 
+* Rust automatically frees memory when a resource implementing `Drop` trait is no longer in use; no special cleanup code required.
+* Example:
+  ```rust
+  struct CustomSmartPointer {
+    data: String,
+  }
+
+  impl Drop for CustomSmartPointer {
+      fn drop(&mut self) {
+          println!("Dropping CustomSmartPointer with data `{}`!", self.data);
+      }
+  }
+
+  fn main() {
+      let c = CustomSmartPointer {
+          data: String::from("my stuff"),
+      };
+      let d = CustomSmartPointer {
+          data: String::from("other stuff"),
+      };
+      println!("CustomSmartPointers created.");
+  }
+  ```
+  Output:
+  ```
+  CustomSmartPointers created.
+  Dropping CustomSmartPointer with data `other stuff`!
+  Dropping CustomSmartPointer with data `my stuff`!
+  ```
+  * The body of the `drop` function is where you would place any logic that you wanted to run when an instance of your type goes out of scope. 
+  * Rust automatically called `drop` for us when our instances went out of scope, calling the code we specified. 
+  * Variables are dropped in the reverse order of their creation, so `c` was dropped first and then `d`.
+* We don't have to worry about problems resulting from accidentally cleaning up values still in use: the ownership system that makes sure references are always valid also *ensures* that drop gets called only once when the value is no longer being used.
+
+### Dropping a Value Early with `std::mem::drop`
+* Suppose you want to drop a value manually before end of scope. You can't call `drop` method manually:
+  ```rust
+  fn main() {
+    let c = CustomSmartPointer {
+        data: String::from("some data"),
+    };
+    println!("CustomSmartPointer created.");
+    c.drop();
+    println!("CustomSmartPointer dropped before the end of main.");
+  }
+  ```
+  Doing so would throw the following error:
+  ```
+    error[E0040]: explicit use of destructor method
+    --> src/main.rs:16:7
+    |
+  16 |     c.drop();
+    |     --^^^^--
+    |     | |
+    |     | explicit destructor calls not allowed
+    |     help: consider using `drop` function: `drop(c)`
+
+  ```
+  * This error message states that we’re not allowed to explicitly call `drop`. 
+  * The error message uses the term **destructor**, which is the general programming term for a function that cleans up an instance. 
+    * The drop function in Rust is one particular destructor.
+  * Rust doesn’t let us call `drop` explicitly because Rust would still automatically call `drop` on the value at the end of main. 
+    * This would be a **double free** error because Rust would be trying to clean up the same value twice.
+* To force a value to be dropped before end of scope, use `std::mem::drop`:
+  ```rust
+  fn main() {
+    let c = CustomSmartPointer {
+        data: String::from("some data"),
+    };
+    println!("CustomSmartPointer created.");
+    drop(c);
+    println!("CustomSmartPointer dropped before the end of main.");
+  }
+  ```
+  Output:
+  ```
+  CustomSmartPointer created.
+  Dropping CustomSmartPointer with data `some data`!
+  CustomSmartPointer dropped before the end of main.
+  ```
+  * Second message `Dropping CustomSmartPointer..` tells us that `c` was dropped before end of scope of `main` function.
+
+
+
 
 
 
