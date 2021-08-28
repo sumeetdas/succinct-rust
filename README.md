@@ -2274,7 +2274,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 ### Generics in Function definitions
 * Example:
   ```rust
-  fn largest<T: std::cmp::PartialOrd>(list: &[T]) -> T {
+  fn largest<T: std::cmp::PartialOrd + Copy>(list: &[T]) -> T {
     let mut largest = list[0];
 
     for &item in list {
@@ -2298,7 +2298,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       println!("The largest char is {}", result);
   }
   ```
-* If you replace `T: std::cmp::PartialOrd` with just `T`, you would get the following error:
+* If you replace `T: std::cmp::PartialOrd + Copy` with just `T`, you would get the following error:
   ```
       error[E0369]: binary operation `>` cannot be applied to type `T`
     --> src/main.rs:5:17
@@ -2315,7 +2315,9 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 
   ```
   * This is because `>` needs the generic type `T` to implement `std::cmp::PartialOrd` trait.
-* `i32` and `char` implement the `std::cmp::PartialOrd` trait.
+  * Also, `let mut largest = list[0]` requires `T` to implement `Copy` trait so that `list[0]` value gets copied over to `largest` or else move will be attempted. 
+    * However, we can't do a move here as we can't move out of a reference, and `list` is a reference to an array.
+* `i32` and `char` implement the `std::cmp::PartialOrd` and `Copy` trait.
 
 ### Generics in Struct and Method definitions
 * Example:
@@ -2574,9 +2576,367 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   {
   ```
 
+### Returning Types that Implement Traits
+* Example:
+  ```rust
+  fn returns_summarizable() -> impl Summary {
+    Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from(
+            "of course, as you probably already know, people",
+        ),
+        reply: false,
+        retweet: false,
+    }
+  }
+  ```
+  * This is useful in case of Closures and iterators.
+    * They create types that only the compiler knows or types that are very long to specify. 
+    * The `impl <Trait>` syntax lets you concisely specify that a function returns some type that implements the `Iterator` trait without needing to write out a very long type.
 
+  * This doesn't work if your function returns multiple types implementing the same trait. So, following code <u>won't compile</u>:
+    ```rust
+    fn returns_summarizable(switch: bool) -> impl Summary {
+        // both NewsArticle and Tweet implements Summary
+        if switch {
+            NewsArticle {
+                //..
+            }
+        } else {
+            Tweet {
+                //..
+            }
+        }
+    }
+    ```
 
+### Using Trait Bounds to Conditionally Implement Methods
+* Example:
+  ```rust
+  struct Pair<T> {
+      x: T,
+      y: T,
+  }
+
+  impl<T: Display + PartialOrd> Pair<T> {
+      fn cmp_display(&self) {
+          if self.x >= self.y {
+              println!("The largest member is x = {}", self.x);
+          } else {
+              println!("The largest member is y = {}", self.y);
+          }
+      }
+  }
+  ```
+  * Here, `cmp_display` method is implemented only for those generic types which implements both `Display` and `PartialOrd` trait.
+* Blanked Implementations:
+  * We can also conditionally implement a trait for any type that implements another trait.
+  * Implementations of a trait on any type that satisfies the trait bounds are called **blanket implementations** and are extensively used in the Rust standard library.
+  * Example:
+    ```rust
+    impl<T: Display> ToString for T {
+    // --snip--
+    }
+    ```
+    * `ToString` trait is implemented for all types which implement `Display` trait.
+    * Since `i32` implements `Display`, we can do this: 
+    `3.to_string()`
+
+## Closures
+* Rust’s closures are anonymous functions you can save in a variable or pass as arguments to other functions. 
+* You can create the closure in one place and then call the closure to evaluate it in a different context. 
+* Unlike functions, closures can capture values from the scope in which they’re defined.
+
+### Capturing the Environment with Closures
+* Closures can capture their environment and access variables from the scope in which they’re defined.
+* Example:
+  ```rust
+  fn main() {
+    let x = 4;
+
+    let equal_to_x = |z| z == x;
+
+    let y = 4;
+
+    assert!(equal_to_x(y));
+  }
+  ```
+  * Even though `x` is not one of the parameters of `equal_to_x`, the `equal_to_x` closure is allowed to use the `x` variable that’s defined in the same scope that `equal_to_x` is defined in.
+* Functions don't capture the environment:
+  ```rust
+  fn main() {
+    let x = 4;
+
+    fn equal_to_x(z: i32) -> bool {
+        z == x
+    }
+
+    let y = 4;
+
+    assert!(equal_to_x(y));
+  }
+  ```
+  Error:
+  ```
+    error[E0434]: can't capture dynamic environment in a fn item
+  --> src/main.rs:5:14
+    |
+  5 |         z == x
+    |              ^
+    |
+    = help: use the `|| { ... }` closure form instead
+  ```
+* Closures have memory overhead, since they need memory to store the values from its parent scope for use in closure body.
+  * Functions are not allowed to capture its parent scope values, so they don't incur this overhead.
+* Closures can capture values from their environment in three ways, which directly map to the three ways a function can take a parameter: <u>taking ownership</u>, <u>borrowing mutably</u>, and <u>borrowing immutably</u>. These are encoded in the three `Fn` traits as follows:
+  * `FnOnce` consumes the variables it captures from its *enclosing scope*, known as the closure’s **environment**. 
+    * To consume the captured variables, the closure must take ownership of these variables and <u>move</u> them into the closure when it is defined. 
+    * The `Once` part of the name represents the fact that the closure can’t take ownership of the same variables more than once, so it can be called only once.
+  * `FnMut` can change the environment because it mutably borrows values.
+  * `Fn` borrows values from the environment immutably.
+* When you create a closure, Rust infers which trait to use based on *how* the closure uses the values from the environment. 
+* All closures implement `FnOnce` because they can all be called at least once. 
+* Closures that don’t move the captured variables also implement `FnMut`
+* Closures that don’t need mutable access to the captured variables implement `Fn`. 
+  * Example:
+    ```rust
+    let x = 4;
+
+    let equal_to_x = |z| z == x;
+    ```
+    * Here, closure borrows `x` immutably, so `equal_to_x` has `Fn` trait.
+* If you want to force the closure to take ownership of the values it uses in the environment, you can use the `move` keyword before the parameter list. 
+  * This technique is mostly useful when passing a closure to a new thread to move the data so it’s owned by the new thread.
+  * `move` closures may still implement `Fn` or `FnMut`, even though they capture variables by move. 
+    * This is because the traits implemented by a closure type are determined by *what* the closure does with captured values, not how it captures them (as is specified by `move` keyword).
+  * Example:
+    ```rust
+    fn main() {
+      let x = vec![1, 2, 3];
+
+      let equal_to_x = move |z| z == x;
+
+      println!("can't use x here: {:?}", x);
+
+      let y = vec![1, 2, 3];
+
+      assert!(equal_to_x(y));
+    }
+    ```
+    We get the following error:
+    ```
+        error[E0382]: borrow of moved value: `x`
+    --> src/main.rs:6:40
+      |
+    2 |     let x = vec![1, 2, 3];
+      |         - move occurs because `x` has type `Vec<i32>`, which does not implement the `Copy` trait
+    3 | 
+    4 |     let equal_to_x = move |z| z == x;
+      |                      --------      - variable moved due to use in closure
+      |                      |
+      |                      value moved into closure here
+    5 | 
+    6 |     println!("can't use x here: {:?}", x);
+      |                                        ^ value borrowed here after move
+    ```
+    * The `x` value is moved into the closure when the closure is defined, because we added the `move` keyword. 
+    * The closure then has ownership of `x`, and `main` isn’t allowed to use `x` anymore in the `println!` statement. 
+    * Removing `println!` will fix this example.
+
+## Iterators
+* The iterator pattern allows you to perform some task on a sequence of items in turn. 
+* An **iterator** is responsible for the logic of iterating over each item and determining when the sequence has finished.
+* In Rust, iterators are **lazy**, meaning they have no effect until you call methods that consume the iterator to use it up.
+* Using an iterator in for loop:
+  ```rust
+  let v1 = vec![1, 2, 3];
+
+  let v1_iter = v1.iter();
+
+  for val in v1_iter {
+      println!("Got: {}", val);
+  }
+  ```
+  * You cannot use `v1_iter` again after `for` loop because the loop takes the ownership of `v1_iter`
+
+### The `Iterator` Trait and the `next` Method
+* All iterators implement a trait named Iterator that is defined in the standard library. 
+* The definition of the trait looks like this:
+  ```rust
+  pub trait Iterator {
+    type Item;
+
+    fn next(&mut self) -> Option<Self::Item>;
+
+    // methods with default implementations elided
+  }
+  ```
+  * Implementing the `Iterator` trait requires that you also define an `Item` type
+  * The `Item` type will be the type returned from the iterator (via `next` method).
+* Example of `next` method:
+  ```rust
+  #[test]
+  fn iterator_demonstration() {
+      let v1 = vec![1, 2, 3];
+
+      let mut v1_iter = v1.iter();
+
+      assert_eq!(v1_iter.next(), Some(&1));
+      assert_eq!(v1_iter.next(), Some(&2));
+      assert_eq!(v1_iter.next(), Some(&3));
+      assert_eq!(v1_iter.next(), None);
+  }
+  ```
+  * Here, we needed to make `v1_iter` mutable: calling the `next` method on an iterator changes internal state that the iterator uses to keep track of where it is in the sequence. 
+  * In other words, this code **consumes**, or uses up, the iterator. 
+    * Each call to next eats up an item from the iterator. 
+  * We didn’t need to make `v1_iter` mutable when we used a `for` loop because the loop took ownership of `v1_iter` and made it mutable behind the scenes.
+* The `iter` method produces an iterator over immutable references.
+  * `next` method above returns immutable references to the values stored in `v1` (e.g. `Some(&3)`)
+* `into_iter` method takes ownership of `v1` and returns owned values.
+* `into_mut` method produces iterator over mutable references.
+
+### Methods that consume iterators
+* Methods that call `next` are called **consuming adaptors**, because calling them uses up the iterator. 
+* One example is the `sum` method, which takes ownership of the iterator and iterates through the items by repeatedly calling `next`, thus consuming the iterator. 
+* As it iterates through, it adds each item to a running total and returns the total when iteration is complete. 
+* Example:
+  ```rust
+  #[test]
+  fn iterator_sum() {
+      let v1 = vec![1, 2, 3];
+
+      let v1_iter = v1.iter();
+
+      let total: i32 = v1_iter.sum();
+
+      assert_eq!(total, 6);
+  }
+  ```
+  * We aren’t allowed to use `v1_iter` after the call to `sum` because `sum` takes ownership of the iterator we call it on.
+
+### Methods that Produce Other Iterators
+* **Iterator adaptors** are methods on `Iterator` trait that allows you to transform current iterator into a new one.
+* You can chain multiple calls to iterator adaptors to perform complex actions in a readable way. 
+* But because all iterators are lazy, you have to call one of the consuming adaptor methods to get results from calls to iterator adaptors.
+* Using just the iterator adaptors would give a warning:
+  ```rust
+  let v1: Vec<i32> = vec![1, 2, 3];
+
+  v1.iter().map(|x| x + 1);
+  ```
+  Warning:
+  ```
+    warning: unused `Map` that must be used
+  --> src/main.rs:4:5
+    |
+  4 |     v1.iter().map(|x| x + 1);
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = note: `#[warn(unused_must_use)]` on by default
+    = note: iterators are lazy and do nothing unless consumed
+  ```
+* Consuming iterator adaptors:
+  ```rust
+  let v1: Vec<i32> = vec![1, 2, 3];
+
+  let v2: Vec<_> = v1.iter().map(|x| x + 1).collect();
+
+  assert_eq!(v2, vec![2, 3, 4]);
+  ```
+  * Here, `collect` methods consumes the `map` iterator adaptor and creates a new vector `[2, 3, 4]`
   
+### Closures and iterator
+* Closures capture the environment:
+  ```rust
+  struct Shoe {
+    size: u32,
+    style: String,
+  }
+
+  fn shoes_in_size(shoes: Vec<Shoe>, shoe_size: u32) -> Vec<Shoe> {
+      shoes.into_iter().filter(|s| s.size == shoe_size).collect()
+  }
+  ```
+  * `into_iter` takes ownership of vector `shoes`
+  * `filter` adapts iterator into a new vector that allows only those elements for which the closure `|s| s.size == shoe_size` returns true
+  * This closure captures `shoe_size` from its environment. 
+  * Calling `collect` gathers the values returned by the adapted iterator into a vector that’s returned by the function.
+
+### Creating Our Own Iterators with the `Iterator` Trait
+* Struct `Counter` for which we want to create an iterator:
+  ```rust
+  struct Counter {
+    count: u32,
+  }
+
+  impl Counter {
+      fn new() -> Counter {
+          Counter { count: 0 }
+      }
+  }
+  ```
+* Implementing `Iterator` for `Counter`:
+  ```rust
+  impl Iterator for Counter {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.count < 5 {
+            self.count += 1;
+            Some(self.count)
+        } else {
+            None
+        }
+    }
+  }
+  ```
+  * We set the associated `Item` type for our iterator to `u32`, meaning the iterator will return `u32` values.
+* Test for the above iterator:
+  ```rust
+  #[test]
+  fn calling_next_directly() {
+      let mut counter = Counter::new();
+
+      assert_eq!(counter.next(), Some(1));
+      assert_eq!(counter.next(), Some(2));
+      assert_eq!(counter.next(), Some(3));
+      assert_eq!(counter.next(), Some(4));
+      assert_eq!(counter.next(), Some(5));
+      assert_eq!(counter.next(), None);
+      assert_eq!(counter.next(), None);
+  }
+  ```
+  * `next` method starts with `Some(1)` till `Some(5)` and finally `None`
+  * Calling `next` method subsequently will still return `None` and not panic.
+* We can now use other iterator methods. For example, if you want to 
+  * create a pair of counter's current value and next value (e.g. `(1, 2)`), 
+  * take a product of the pair numbers (e.g. `1 * 2`), 
+  * keep those products which are multiple of 3 and then
+  * sum them
+  you can use iterators to implement this:
+  ```rust
+  #[test]
+  fn using_other_iterator_trait_methods() {
+      let sum: u32 = Counter::new()
+          .zip(Counter::new().skip(1))
+          .map(|(a, b)| a * b)
+          .filter(|x| x % 3 == 0)
+          .sum();
+      assert_eq!(18, sum);
+  }
+  ```
+  * Note that `zip` returns `None` if either of the pair is `None`, so `(5, None)` is never produced.
+
+### Performance of Iterators
+* Iterators, although a high-level abstraction, get compiled down to roughly the same code as if you’d written the lower-level code yourself. 
+* Iterators are one of Rust’s zero-cost abstractions, by which we mean using the abstraction imposes no additional runtime overhead.
+* In words of Bjarne Stroustrup (creator of C++):
+  ```
+  In general, C++ implementations obey the zero-overhead principle: What you don’t use, you don’t pay for. And further: What you do use, you couldn’t hand code any better.
+  ```
+
+
 
 
 
