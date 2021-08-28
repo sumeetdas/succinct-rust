@@ -1,7 +1,7 @@
 # rust-in-one-page
 I document all I know about Rust programming language in this one page.
 
-## Variables
+# Variables
 To define an immutable variable:
 ```rust
 let x = 5;
@@ -19,7 +19,7 @@ let x: i32 = 5;
 
 i32 here is data type for 32-bit integer values.
 
-## Constants
+# Constants
 * Constants are always immutable, so can't use `mut` with them.
 * Constants always require data type annotation.
 * Constants can be used in any scope, including global scope.
@@ -31,7 +31,7 @@ const PI:f32 = 3.14;
 ```
 * By convention, constants are named as ALL_CAPS.
 
-## Shadowing
+# Shadowing
 * You can reuse same variable name in Rust.
 ```rust
 let x = 5;
@@ -45,13 +45,13 @@ let mut x = 5;
 x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 ```
 
-## Data Types
+# Data Types
 
-### Scalar Types
+## Scalar Types
 * A scalar type represents a single value. 
 * Rust has four primary scalar types: integers, floating-point numbers, Booleans, and characters.
 
-#### Integer Type
+### Integer Type
 * An integer is a number without a fractional component. 
 * Example: u32. This type declaration indicates that the value it’s associated with should be an unsigned integer (signed integer types start with i, instead of u) that takes up 32 bits of space.
 * | Length |	Signed |	Unsigned |
@@ -75,25 +75,25 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * All number literals except the byte literal allow a type suffix, such as `57u8`, and _ as a visual separator, such as `1_000`
 * Integer types default to `i32`
 
-#### Floating-Point Types 
+### Floating-Point Types 
 * Two floating types: `f32` and `f64`
 * Default is `f64`. E.g. in `let x = 2.0`, `x`'s data type is `f64`.
 
-#### Boolean type
+### Boolean type
 * Boolean type has two possible values - `true` or `false`.
 * Booleans are one byte in size, and are specified by `bool` data type.
 
-#### Character type
+### Character type
 * Defined by `char`
 * `char` literals are specified using single quotes
 * Can save emojis into char variable: `let heart_eyed_cat = '😻';`
 * Can save unicode as chars: `let digit_2 = '\u{0032}';`
 * Rust’s char type is four bytes in size and represents a Unicode Scalar Value
 
-### Compound Types
+## Compound Types
 * Compound types can group multiple values into one type. 
 
-#### Tuple Type
+### Tuple Type
 * A tuple is a general way of grouping together a number of values with a **variety of types** into one compound type. 
 * Tuples have a fixed length: once declared, they cannot grow or shrink in size.
 * Example: `let tup: (i32, f64, u8) = (500, 6.4, 1);`
@@ -105,7 +105,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * `let (x, y, z) = tup;` is called **destructuring**, because it breakes tuple into multiple parts
 * We can access a tuple element directly by using a period (.) followed by the index of the value we want to access. Eg: `let five_hundred = x.0;`
 
-#### Array Type
+### Array Type
 * Unlike a tuple, every element of an array must have the same type.
 * Arrays have fixed length.
 * Eg: `let a = [1, 2, 3, 4, 5];`
@@ -115,7 +115,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * Create an array of 5 elements, all having same value 3: `let a = [3; 5];`
 * Access array elements as: `let first = a[0];`
   
-## Functions
+# Functions
 * `main` function (stored in `main.rs` file) is the entry point of Rust programs.
 * `fn` keyword defines new functions
   ```rust
@@ -152,7 +152,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * Advantage of creating function instead of closures (called as lambdas in JS, Java and other languages) is that you can call these functions recursively (as `factorial` function above).
   * No performance penalty for using function inside function, as they are [static](https://www.reddit.com/r/rust/comments/22km6a/functions_inside_functions/cgntp3c/?utm_source=reddit&utm_medium=web2x&context=3) (TODO: need more explanation here).
 
-### Expressions and Statements
+## Expressions and Statements
 * In Rust, everything to the RHS of `=` is considered to be an expression.
   * For example, in `let x = 6`, 6 is an expression.
   * Expressions evaluate to something and returns a value, while as statements don't.
@@ -177,7 +177,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * Block returns a value (`x + 1`). Any statement which does not end with `;` is considered as return expression.
     * We reused variable `x` inside the block and assigned it `3`. This value will shadow the value `5` throughout the block. Once the block is over, `x`'s value becomes `5`.
 
-### Function with return values
+## Function with return values
 
 * Return types are defined as follows: `fn func() -> i32 {...}`
 * In Rust, the return value of the function is synonymous with the value of the final expression in the block of the body of a function.
@@ -188,7 +188,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   This functions returns the value `5`.
 
-## Comments
+# Comments
 * Comments start with `//`
   ```rust
   // flag for whether to perform search op or not
@@ -199,9 +199,9 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   let search_flag = false; // comment
   ```
 
-## Control flow
+# Control flow
 
-### if expression
+## if expression
 * In Rust, `if` expression can also return values:
   ```rust
   let x = if number > 8 {
@@ -215,7 +215,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
-### loop expression
+## loop expression
 * Functional-style loops which will iterate for a certain number of times till it reaches a condition where it will return with some value. Eg: 
   ```rust
   let mut counter = 0;
@@ -229,7 +229,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   Here, once `counter` reaches 10, `loop` breaks and returns a value of 3 and gets stored in variable `x`.
 * Without `break` expression, loop will go on forever.
 
-### for loop
+## for loop
 * To loop through collection, you can use `for .. in` statement:
   ```rust
   let a = [1, 2, 3, 4, 5];
@@ -250,9 +250,9 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   Here, `1..4` creates an array with values between 1 and 4, and calling `rev` function reverses the order. Then use for loop to iterate through the array.
 
-## Ownership
+# Ownership
 
-### Stack and Heap
+## Stack and Heap
 *  Stack
    *  The stack stores values in the order it gets them and removes the values in the opposite order. 
    *  This is referred to as last in, first out. 
@@ -270,12 +270,12 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
  * When your code calls a function, the values passed into the function (including, potentially, pointers to data on the heap) and the function’s local variables get pushed onto the stack. 
    * When the function is over, those values get popped off the stack.
 
-### Ownership Rules
+## Ownership Rules
 * Each value in Rust has a variable that’s called its owner.
 * There can only be one owner at a time.
 * When the owner goes out of scope, the value will be dropped.
 
-### Variable Scope
+## Variable Scope
 * A scope is the range within a program for which an item is valid.
 * Usually, the scope for a variable is defined in the pair of braces `{..}` inside of which the variable is defined. 
   * The variable is called **in scope**.
@@ -289,7 +289,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     }   // this scope is now over, and s is no longer valid
   ```
 
-### String Type
+## String Type
 * String literals are of type `str` and are immutable.
 * Strings of type `String` are mutable.
 * Convert `str` to `String` via: `let string = String::from('hello');`
@@ -316,7 +316,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * When a variable goes out of scope (like at the end of closing brace above), Rust calls a `drop` function.
     * `drop` function is like *Resource Acquisition Is Initialization (RAII)* in C++, which is a pattern of deallocating resources at the end of an item’s lifetime
 
-### Move
+## Move
 * Consider the following snippet:
   ```rust
   let x = 5;
@@ -354,7 +354,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * Which would also imply that you could use `s1` later in the above code.
   * However, since `String` implements `Drop` trait, `s1` gets automatically invalidated when it goes out of scope.
 
-### Copy, Clone and Drop traits
+## Copy, Clone and Drop traits
 * If a type implements `Drop` trait, then the resource (data stored in a variable) is dropped or deleted once the associated variable goes out of scope.
 * If a type implements `Copy` trait,then the resource gets copied to the other variable.
   * When you implement `Copy` for a type:
@@ -398,7 +398,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * If a type implements `Clone` trait, then you can call explicitly `s1.clone()` method to clone data stored in `s1` variable. In this case, you can also implement `Drop` trait to the same type.
   * In other words, `Clone` and `Drop` can co-exist.
   
-### Ownership and Functions
+## Ownership and Functions
 * Passing a variable to a function will move or copy, just as assignment does. 
   ```rust
   fn main() {
@@ -430,7 +430,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   // Nothing special happens.
   ```
 
-### Return Values and Scope
+## Return Values and Scope
 * Returning values can also transfer ownership.
   ```rust
   fn main() {
@@ -468,7 +468,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * The ownership of a variable follows the same pattern every time: assigning a value to another variable **moves** it. 
 * When a variable that includes data on the heap goes out of scope, the value will be cleaned up by `drop` *unless* the data has been moved to be owned by another variable.
 
-### References and Borrowing
+## References and Borrowing
 * Suppose you want to get length of a string. If you pass the variable into a function, then the ownership gets transferred to the function. To avoid this, you can return a tuple of length and the string itself.
   ```rust
   fn main() {
@@ -520,7 +520,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   8 |     some_string.push_str(", world");
     |     ^^^^^^^^^^^ `some_string` is a `&` reference, so the data it refers to cannot be borrowed as mutable
   ```
-### Mutable references
+## Mutable references
 * You can make references as mutable by adding `mut` after `&`:
   ```rust
   fn change(some_string: &mut String) {
@@ -604,7 +604,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * This works because a reference’s scope starts from where it is introduced and continues through the last time that reference is used.
 
-### Dangling References
+## Dangling References
 * In languages with pointers, it’s easy to erroneously create a **dangling pointer**, a pointer that references a location in memory that may have been given to someone else by freeing some memory. 
 * In Rust, by contrast, the compiler guarantees that references will never be dangling references.
   * If you have a reference to some data, the compiler will ensure that the data will not go out of scope before the reference to the data does.
@@ -643,7 +643,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * As you can see, since the variable owning the `String` is dropped at the end of the function, `&s` would create a reference to invalid memory location.
     * Rust stops you from creating such references by throwing compile-time error with the above error message.
 
-## The Slice Type
+# The Slice Type
 * The **slice** data type let you reference a contiguous sequence of elements in a collection rather than the whole collection.
   * You can't have ownership of this data type.
 * A string slice is a reference to part of a String:
@@ -754,7 +754,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * This `slice` has the type &[i32]. 
   * It works the same way as string slices do, by storing a reference to the first element and a length.
 
-## Structs
+# Structs
 * Structs are like class in Java and C++
 * Example:
   ```rust
@@ -813,7 +813,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       rectangle.width * rectangle.height
   }
   ```
-### Field Init Shorthand
+## Field Init Shorthand
   ```rust
   fn build_user(email: String, username: String) -> User {
     User {
@@ -825,7 +825,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
   * When Variable and Fields have same name, you can use just the property name as above.
-### Struct Update Syntax
+## Struct Update Syntax
   ```rust
   let user2 = User {
       email: String::from("another@example.com"),
@@ -835,7 +835,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * Rest of the values of `user2` would be used from `user1`.
 
-### Tuple Structs
+## Tuple Structs
   ```rust
   struct Color(i32, i32, i32);
   struct Point(i32, i32, i32);
@@ -862,12 +862,12 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```   
 
-### Unit-Like Structs
+## Unit-Like Structs
   *  You can define structs that don’t have any fields.
   *  These are called unit-like structs because they behave similarly to (), the unit type. 
   *  Useful when you need to implement a trait but don’t have any data you want to store in it.
 
-### Debug structs
+## Debug structs
 * When you try to print a struct as below:
   ```rust
   struct Rectangle {
@@ -919,7 +919,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       }
       ```
 
-### Methods
+## Methods
 * Methods are similar to functions, but are defined in structs and the first parameter is always 
   * `self` (take ownership) or 
   * `&self` (immutable borrow) or 
@@ -987,7 +987,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
-### Automatic referencing and dereferencing
+## Automatic referencing and dereferencing
   * When you call a method with `object.something()`, Rust automatically adds in `&`, `&mut`, or `*` so object matches the signature of the method. 
   * In other words, the following are the same:
     ```rust
@@ -997,7 +997,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * This automatic referencing behavior works because methods have a clear receiver—the type of `self`. 
   * Given the receiver and name of a method, Rust can figure out definitively whether the method is reading (`&self`), mutating (`&mut self`), or consuming (`self`). 
 
-### Associated functions
+## Associated functions
 * These functions are part of structs but don't have `self` or its variants as first parameters.
 * These are like static methods in Java.
 * These are called **associated functions** because they’re associated with the struct. 
@@ -1018,7 +1018,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * To call a associated function, we use the `::` syntax with the struct name.
 
-## Enums and Pattern Matching
+# Enums and Pattern Matching
 * Rust’s enums are most similar to **algebraic data types** in functional languages, such as F#, OCaml, and Haskell. 
   * Algebraic data types are made up of sum and product types (hence the word *algebraic*).
   * Product types
@@ -1053,7 +1053,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * You can add methods to an enum via `impl` blocks (same as in structs)
   * Access enum types via `::` operator (since enum types are like associated functions in structs; enum `Message` serves as namespace for these four enum types).
 
-### `Option` Enum
+## `Option` Enum
 * Null values are PITA to deal with (myself coming from Java background, so I know).
 * Rust has no concept of null values. Instead, we use `Option` enum:
   ```rust
@@ -1089,7 +1089,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
-### `match` control flow
+## `match` control flow
 * You can do pattern matching on enum types via `match` operator.
   * Somewhat similar to switch/case in Java, but more powerful as it can match types
 * Example:
@@ -1163,7 +1163,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ``` 
   * For `input_num` values not equal to either 1, 3, 5, or 7, the `match` expression would return `"default"` and gets stored in `num_to_str` variable.
 
-### Patterns that Bind to Values
+## Patterns that Bind to Values
 * Match arms can bind to the parts of the values that match the pattern.
 * Example:
   ```rust
@@ -1197,7 +1197,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * When we compare that value with each of the match arms, none of them match until we reach `Coin::Quarter(state)`. 
   * At that point, the binding for `state` will be the value `UsState::Alaska`. 
 
-### if let syntax
+## if let syntax
 * If you want to execute some code just for one match arm and ignore the rest, then you can use `if let` syntax.
 * Example: You have a match expression like this:
   ```rust
@@ -1219,9 +1219,9 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     }
     ```
 
-## Packages, Crates and Modules
+# Packages, Crates and Modules
 
-### Packages and Crates
+## Packages and Crates
 * A **crate** is a binary or library. 
 * The **crate root** is a source file that the Rust compiler starts from and makes up the root module of your crate.
 * A **package** is one or more crates that provide a set of functionality. 
@@ -1254,7 +1254,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * In our crate, it refers to the struct `Rng` that we defined. 
   * We would access the `Rng` trait from the `rand` crate as `rand::Rng`.
 
-### Modules
+## Modules
 * **Modules** let us organize code within a crate into groups for readability and easy reuse. 
 * Modules also control the *privacy* of items, which is whether an item: 
   * can be used by outside code (**public**) or 
@@ -1300,7 +1300,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * `hosting` and `serving` are siblings.
   * Notice that the entire module tree is rooted under the *implicit module* named `crate`.
 
-### Paths for Referring to an Item in the Module Tree
+## Paths for Referring to an Item in the Module Tree
 * To show Rust where to find an item in a module tree, we use a **path** in the same way we use a path when <u>navigating a filesystem</u>. 
 * A path can take two forms:
   * An **absolute path** starts from a crate root by using a crate name or a literal crate.
@@ -1344,7 +1344,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * Items in a parent module can’t use the private items <u>inside child modules</u>, but items in child modules can use the items in their ancestor modules. 
     * The reason is that child modules wrap and hide their implementation details, but the child modules can see <u>the context</u> in which they’re defined.
 
-### Exposing Paths with the pub Keyword
+## Exposing Paths with the pub Keyword
 * To provide access to inner members of a module, use `pub` keyword. Example:
   ```rust
   mod front_of_house {
@@ -1360,7 +1360,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * The above example still won't compile as `add_to_waitlist` is not declared as `pub`.
   * Changing `fn add_to_waitlist()` to `pub fn add_to_waitlist()` will compile the code.
 
-### Starting Relative Paths with super
+## Starting Relative Paths with super
 * You can access parent module contents via `super` keyword
   * Its like doing `cd ..` in bash to go up to parent directory.
 * Example:
@@ -1378,7 +1378,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * Here, `super` will take compiler to search for `serve_order` function in parent module of `back_of_house`. In this case, it does find the function and hence code compiles.
 
-### Making Structs and Enums Public
+## Making Structs and Enums Public
 * When you make structs public in a module, the struct's fields and methods are still private.
 * #RustPattern: If you want to make a struct field immutable, just leave it as private and provide a getter method (or accessor) to get the field value:
   ```rust
@@ -1427,7 +1427,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
-### `use` keyword
+## `use` keyword
 * We can bring a path into a scope once and then call the items in that path as if they’re local items with the `use` keyword. Example:
   ```rust
   mod front_of_house {
@@ -1512,7 +1512,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     }
     ```
 
-### Using External Packages
+## Using External Packages
 * When you add a dependency via `Cargo.toml`:
   ```
   [dependencies]
@@ -1535,7 +1535,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     ```
     * This is an absolute path starting with `std`, the name of the standard library crate.
 
-### Nested paths
+## Nested paths
 * If we're using multiple items in the same crate or module, we can use nested paths. For example, we can write this:
   ```rust
   // --snip--
@@ -1559,7 +1559,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   use std::io::{self, Write};
   ```
 
-### Glob operator
+## Glob operator
 * If we want to bring *all* public items defined in a path into scope, we can specify that path followed by `*`, the glob operator:
   ```rust
   use std::collections::*;
@@ -1570,7 +1570,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * where a name used in your program was defined
 * Its often used when testing to bring everything under test into the `tests` module.
 
-### Separating Modules into Different Files
+## Separating Modules into Different Files
 * You've got this code:
   ```rust
   mod front_of_house {
@@ -1613,7 +1613,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     pub fn add_to_waitlist() {}
     ```
 
-## Collections
+# Collections
 * Collections are data structures that contain multiple values.
 * The data is stored on the heap, which means the amount of data does not need to be known at compile time and can grow or shrink as the program runs.
 * Types of collections:
@@ -1621,7 +1621,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * A *string* is a collection of characters. 
   * A *hash map* allows you to associate a value with a particular key. It’s a particular implementation of the more general data structure called a map.
 
-### Vectors
+## Vectors
 * Vector, or `Vec<T>`, allows you to store more than one value in a single data structure that puts all the values next to each other in memory. 
 * Vectors can only store values of the same type.
 * Create a new vector:
@@ -1720,7 +1720,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ];
   ```
 
-## Strings
+# Strings
 * Rust has only one string type in the core language, which is the string slice `str` that is usually seen in its borrowed form `&str`. 
 * **String slices** - references to some UTF-8 encoded string data stored elsewhere
   * For example: String literals are stored in the program’s binary and are therefore string slices.
@@ -1755,7 +1755,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * `s` will contain `lol`
 
-### Concatenation with `+` operator
+## Concatenation with `+` operator
 * Example:
   ```rust
   let s1 = String::from("Hello, ");
@@ -1773,7 +1773,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * appends a copy of the contents of s2
   * and then returns ownership of the result, thus making it more efficient than copying.
 
-### Concatenation with `format!` macro
+## Concatenation with `format!` macro
 * Example:
   ```rust
   let s1 = String::from("tic");
@@ -1785,7 +1785,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * The format!` macro works in the same way as `println!`, but instead of printing the output to the screen, it returns a String with the contents. 
 * The version of the code using `format!` is much easier to read and doesn’t take ownership of any of its parameters.
 
-### Indexing into strings
+## Indexing into strings
 * In Rust, indexing into strings will throw an error:
   ```rust
   let s1 = String::from("hello");
@@ -1848,7 +1848,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     ```
   * Using `&hello[0..3]` works OK as Cyrillic characters are stored as 2 bytes.
 
-### Methods for Iterating over `String`s
+## Methods for Iterating over `String`s
 * To iterate over Unicode scalar values:
   ```rust
   for c in "नमस्ते".chars() {
@@ -1880,7 +1880,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
 * Rust standard library doesn't provide grapheme cluster iteration functionality as it is complex.
 
-## HashMaps
+# HashMaps
 * The type `HashMap<K, V>` stores a mapping of keys of type `K` to values of type `V`. 
 * It does this via a *hashing function*, which determines how it places these keys and values into memory. 
 * Creating a new hash map:
@@ -1910,7 +1910,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * `zip` method is used to create a vector of tuples where team is paired with initial score (e.g. “Blue” is paired with 10).
   * `collect` method to turns vector of tuples into a hash map.
 
-### Hash Maps and Ownership
+## Hash Maps and Ownership
 * For types that implement the `Copy` trait, like `i32`, the values are copied into the hash map. 
 * For owned values like `String`, the values will be moved and the hash map will be the owner of those values.
 * Example:
@@ -1928,7 +1928,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * If we insert references to values into the hash map, the values won’t be moved into the hash map. 
   * The values that the references point to must be valid for at least as long as the hash map is valid.
 
-### Accessing Values in a Hash Map
+## Accessing Values in a Hash Map
 * Example:
   ```rust
   use std::collections::HashMap;
@@ -1962,7 +1962,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   Blue: 10
   ```
 
-### Updating a Hash Map
+## Updating a Hash Map
 * Overwriting a value:
   * If we insert a key and a value into a hash map and then insert that same key with a different value, the value associated with that key will be replaced.
   * Example:
@@ -2004,7 +2004,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * The first call to entry will insert the key for the Yellow team with the value 50 because the Yellow team doesn’t have a value already.
     * The second call to entry will not change the hash map because the Blue team already has the value 10.
 
-### Updating a Value Based on the Old Value
+## Updating a Value Based on the Old Value
 * Example:
   ```rust
   use std::collections::HashMap;
@@ -2027,17 +2027,17 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * `or_insert` method returns mutable reference to value for the key.
   * To mutate the reference, use dereference operator (`*`) (e.g. `*count += 1` above)
 
-### Hashing Functions
+## Hashing Functions
 * By default, `HashMap` uses a hashing function called **SipHash** that can provide resistance to Denial of Service (DoS) attacks involving hash tables.
 * You can change hash function by specifying a different *hasher*.
   * A **hasher** is a type that implements the `BuildHasher` trait.
 
-## Error Handling in Rust
+# Error Handling in Rust
 * There are two ways of handling errors in Rust:
   * The `panic!` macro signals that your program is in a state it can’t handle and lets you tell the process to stop instead of trying to proceed with invalid or incorrect values.
   * The `Result` enum uses Rust’s type system to indicate that operations might fail in a way that your code could recover from.
 
-### Unrecoverable Errors with panic!
+## Unrecoverable Errors with panic!
 * When the panic! macro executes, your program will print a failure message, unwind and clean up the stack, and then quit.
 * This most commonly occurs when a bug of some kind has been detected and it’s not clear to the programmer how to handle the error.
 * Example:
@@ -2054,7 +2054,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The call to panic! causes the error message contained in the last two lines. 
   * The first line shows our panic message (`'crash and burn'`) and the place in our source code where the panic occurred: `src/main.rs:2:5` indicates that it’s the second line, fifth character of our `src/main.rs` file.
 
-### Using a `panic!` backtrace
+## Using a `panic!` backtrace
 * Consider the following code:
   ```rust
   fn main() {
@@ -2102,7 +2102,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The source code information you see above (e.g. `at ./src/main.rs:4`) are called **debug symbols**.
   * Debug symbols are not present if you do `cargo build --release` or `cargo run --release`.
 
-### Unwinding the Stack or Aborting in Response to a Panic
+## Unwinding the Stack or Aborting in Response to a Panic
 * By default, when a panic occurs, the program starts unwinding, which means Rust walks back up the stack and cleans up the data from each function it encounters. 
   * But this walking back and cleanup is a lot of work. 
 * The alternative is to immediately abort, which ends the program without cleaning up. 
@@ -2114,7 +2114,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     panic = 'abort'
     ```
 
-### Recoverable errors with `Result`
+## Recoverable errors with `Result`
 * `Result` enum:
   ```rust
   enum Result<T, E> {
@@ -2142,7 +2142,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The other arm of the match handles the case where we get an `Err` value from `File::open`. In this example, we’ve chosen to call the `panic!` macro.
     * For example, the program will panic when `hello.txt` file does not exist.
 
-### Matching with different errors
+## Matching with different errors
 * Example:
   ```rust
   use std::fs::File;
@@ -2183,7 +2183,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * This is more functional way of writing code, which removed one match expression and makes code more readable.
 
-### Shortcuts for Panic on Error: unwrap and expect
+## Shortcuts for Panic on Error: unwrap and expect
 * Example:
   ```rust
   use std::fs::File;
@@ -2214,7 +2214,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
 * **Pro tip**: Don't ever use `unwrap` or `expect`, because that would make the program crash. Instead, use `unwrap_or_else` method to handle errors in code itself.
 
-### Propagating Errors using `?` operator
+## Propagating Errors using `?` operator
 * Example:
   ```rust
   use std::fs::File;
@@ -2266,12 +2266,12 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The `Box<dyn Error>` type is called a **trait object**.
     * Here, it means “any kind of error.”
 
-## Generic Data Types
+# Generic Data Types
 * Generics are abstract stand-ins for concrete types or other properties (TODO: Need better definition).
   * Similar to Java Generics
 * Generics help you to avoid code duplication by using same data structure or function for different data types.
 
-### Generics in Function definitions
+## Generics in Function definitions
 * Example:
   ```rust
   fn largest<T: std::cmp::PartialOrd + Copy>(list: &[T]) -> T {
@@ -2319,7 +2319,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * However, we can't do a move here as we can't move out of a reference, and `list` is a reference to an array.
 * `i32` and `char` implement the `std::cmp::PartialOrd` and `Copy` trait.
 
-### Generics in Struct and Method definitions
+## Generics in Struct and Method definitions
 * Example:
   ```rust
   struct Point<T> {
@@ -2364,7 +2364,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   This struct would support something like `let p = Point { x: 5, y: 4.0 };`
 
-### Enum with Generic Types
+## Enum with Generic Types
 * Example with single generic type:
   ```rust
   enum Option<T> {
@@ -2380,7 +2380,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
-### Performance of Code Using Generics
+## Performance of Code Using Generics
 * Rust implements generics in such a way that your code doesn’t run any slower using generic types than it would with concrete types.
 * Rust accomplishes this by performing monomorphization of the code that is using generics at compile time. 
 * **Monomorphization** is the process of turning generic code into specific code by filling in the concrete types that are used when compiled.
@@ -2413,7 +2413,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * When the code runs, it performs just as it would if we had duplicated each definition by hand. 
 * The process of monomorphization makes Rust’s generics extremely efficient at runtime.
 
-## Traits
+# Traits
 * A **trait** is used to define shared behavior in an abstract way. 
   * A type’s behavior consists of the methods we can call on that type. 
   * Different types share the same behavior if we can call the same methods on all of those types. 
@@ -2473,7 +2473,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
 * If the `Summary` trait was defined in *another module* called `aggregate`, then you would need to bring the trait into scope via `use aggregate::Summary;`
 
-### Coherence / Orphan rule
+## Coherence / Orphan rule
 * We can implement a trait on a type only if either the trait or the type is local to our crate.
   * Here, either `Summary` trait need to be local or `Tweet` struct need to be local.
   * We can’t implement the `Display` trait on `Vec<T>` within our crate, because `Display` and `Vec<T>` are defined in the standard library and aren’t local to our crate.
@@ -2481,7 +2481,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * This rule ensures that other people’s code can’t break your code and vice versa. 
 * Without the rule, two crates could implement the same trait for the same type, and Rust wouldn’t know which implementation to use.
 
-### Default Implementations
+## Default Implementations
 * Example:
   ```rust
   pub trait Summary {
@@ -2542,7 +2542,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * Here, `summarize` method of `Summary` trait calls `summarize_author` method of the same trait. 
   * Since `summarize_author` method doesn't have an implementation, structs implementing the trait need to provide an implementation for it (as is done in `impl Summary for Tweet` block).
 
-### Trait Bound Syntax
+## Trait Bound Syntax
 * Example:
   ```rust
   pub fn notify<T: Summary>(item: &T) {
@@ -2556,14 +2556,14 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       println!("Breaking news! {}", item.summarize());
     }
     ```
-### Specifying multiple trait bounds via `+` syntax:
+## Specifying multiple trait bounds via `+` syntax:
 * Example:
   ```rust
   pub fn notify<T: Summary + Display>(item: &T) {
   ```
   * With the two trait bounds specified, the body of notify can call `summarize` and use `{}` to format item.
 
-### Clearer trait bounds using `where` clause
+## Clearer trait bounds using `where` clause
 * When you have multiple trait bounds like this:
   ```rust
   fn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {
@@ -2576,7 +2576,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   {
   ```
 
-### Returning Types that Implement Traits
+## Returning Types that Implement Traits
 * Example:
   ```rust
   fn returns_summarizable() -> impl Summary {
@@ -2610,7 +2610,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     }
     ```
 
-### Using Trait Bounds to Conditionally Implement Methods
+## Using Trait Bounds to Conditionally Implement Methods
 * Example:
   ```rust
   struct Pair<T> {
@@ -2642,12 +2642,12 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * Since `i32` implements `Display`, we can do this: 
     `3.to_string()`
 
-## Closures
+# Closures
 * Rust’s closures are anonymous functions you can save in a variable or pass as arguments to other functions. 
 * You can create the closure in one place and then call the closure to evaluate it in a different context. 
 * Unlike functions, closures can capture values from the scope in which they’re defined.
 
-### Capturing the Environment with Closures
+## Capturing the Environment with Closures
 * Closures can capture their environment and access variables from the scope in which they’re defined.
 * Example:
   ```rust
@@ -2743,7 +2743,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * The closure then has ownership of `x`, and `main` isn’t allowed to use `x` anymore in the `println!` statement. 
     * Removing `println!` will fix this example.
 
-## Iterators
+# Iterators
 * The iterator pattern allows you to perform some task on a sequence of items in turn. 
 * An **iterator** is responsible for the logic of iterating over each item and determining when the sequence has finished.
 * In Rust, iterators are **lazy**, meaning they have no effect until you call methods that consume the iterator to use it up.
@@ -2759,7 +2759,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * You cannot use `v1_iter` again after `for` loop because the loop takes the ownership of `v1_iter`
 
-### The `Iterator` Trait and the `next` Method
+## The `Iterator` Trait and the `next` Method
 * All iterators implement a trait named Iterator that is defined in the standard library. 
 * The definition of the trait looks like this:
   ```rust
@@ -2796,7 +2796,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * `into_iter` method takes ownership of `v1` and returns owned values.
 * `into_mut` method produces iterator over mutable references.
 
-### Methods that consume iterators
+## Methods that consume iterators
 * Methods that call `next` are called **consuming adaptors**, because calling them uses up the iterator. 
 * One example is the `sum` method, which takes ownership of the iterator and iterates through the items by repeatedly calling `next`, thus consuming the iterator. 
 * As it iterates through, it adds each item to a running total and returns the total when iteration is complete. 
@@ -2815,7 +2815,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * We aren’t allowed to use `v1_iter` after the call to `sum` because `sum` takes ownership of the iterator we call it on.
 
-### Methods that Produce Other Iterators
+## Methods that Produce Other Iterators
 * **Iterator adaptors** are methods on `Iterator` trait that allows you to transform current iterator into a new one.
 * You can chain multiple calls to iterator adaptors to perform complex actions in a readable way. 
 * But because all iterators are lazy, you have to call one of the consuming adaptor methods to get results from calls to iterator adaptors.
@@ -2846,7 +2846,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * Here, `collect` methods consumes the `map` iterator adaptor and creates a new vector `[2, 3, 4]`
   
-### Closures and iterator
+## Closures and iterator
 * Closures capture the environment:
   ```rust
   struct Shoe {
@@ -2863,7 +2863,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * This closure captures `shoe_size` from its environment. 
   * Calling `collect` gathers the values returned by the adapted iterator into a vector that’s returned by the function.
 
-### Creating Our Own Iterators with the `Iterator` Trait
+## Creating Our Own Iterators with the `Iterator` Trait
 * Struct `Counter` for which we want to create an iterator:
   ```rust
   struct Counter {
@@ -2928,7 +2928,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * Note that `zip` returns `None` if either of the pair is `None`, so `(5, None)` is never produced.
 
-### Performance of Iterators
+## Performance of Iterators
 * Iterators, although a high-level abstraction, get compiled down to roughly the same code as if you’d written the lower-level code yourself. 
 * Iterators are one of Rust’s zero-cost abstractions, by which we mean using the abstraction imposes no additional runtime overhead.
 * In words of Bjarne Stroustrup (creator of C++):
@@ -2936,7 +2936,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   In general, C++ implementations obey the zero-overhead principle: What you don’t use, you don’t pay for. And further: What you do use, you couldn’t hand code any better.
   ```
 
-## Smart Pointers
+# Smart Pointers
 * A **pointer** is a general concept for a variable that contains an address in memory. 
   * This address refers to, or “points at,” some other data.
 * The most common kind of pointer in Rust is a reference, which:
@@ -2952,7 +2952,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The `Deref` trait allows an instance of the smart pointer struct to behave like a reference so you can write code that works with either references or smart pointers. 
   *  The `Drop` trait allows you to customize the code that is run when an instance of the smart pointer goes out of scope.
 
-### Using `Box<T>` to Point to Data on the Heap
+## Using `Box<T>` to Point to Data on the Heap
 * The most straightforward smart pointer is a box, whose type is written `Box<T>`. 
 * Boxes allow you to store data on the heap rather than the stack. 
 * What remains on the stack is the pointer to the heap data. 
@@ -2961,7 +2961,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * When a `Box<T>` value goes out of scope, the heap data that the box is pointing to is cleaned up as well because of the `Drop` trait implementation.
 * Following sections will elaborate on the capabilities of Box pointers.
 
-#### Using a Box<T> to Store Data on the Heap
+### Using a Box<T> to Store Data on the Heap
 * Example:
   ```rust
   fn main() {
@@ -2974,7 +2974,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * When a box goes out of scope, as b does at the end of main, it will be deallocated. 
   * The deallocation happens for the box (stored on the stack) and the data it points to (stored on the heap).
 
-#### Enabling Recursive Types with Boxes
+### Enabling Recursive Types with Boxes
 * At compile time, Rust needs to know how much space a type takes up. 
 * One type whose size can’t be known at compile time is a **recursive type**, where a value can have as part of itself another value of the same type. 
 * Because this nesting of values could theoretically continue infinitely, Rust doesn’t know how much space a value of a recursive type needs. 
@@ -3018,11 +3018,11 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * This reference is of type `Box`, which internally stores the pointer data as `usize`.
   * Since Rust can now figure out the size of `Node` at compile time, the code compiles without any error.
 
-### Treating Smart Pointers Like Regular References with the `Deref` Trait
+## Treating Smart Pointers Like Regular References with the `Deref` Trait
 * Implementing the `Deref` trait allows you to customize the behavior of the **dereference operator**, `*`.
 * This allows you to write code that operates on references and smart pointers alike.
 
-#### Following the Pointer to the Value with the Dereference Operator
+### Following the Pointer to the Value with the Dereference Operator
 * Example:
   ```rust
   fn main() {
@@ -3045,7 +3045,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     |
   ```
 
-#### Using `Box<T>` Like a Reference
+### Using `Box<T>` Like a Reference
 * Example:
   ```rust
   fn main() {
@@ -3058,7 +3058,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * `y` contains boxed `x` but can be deferenced (via `*y`) because `Box` implements `Deref` trait.
 
-#### Custom type and its `Deref` implementation
+### Custom type and its `Deref` implementation
 * We create the following struct tuple `Number`:
   ```rust
   struct Number<T>(T);
@@ -3089,7 +3089,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * `*` then does a plain dereference of the reference returned by `deref`.
 * If the `deref` method returned the value directly instead of a reference to the value, the value would be moved out of `self`, which is not desirable.
 
-#### Deref coercions
+### Deref coercions
 * **Deref coercion** is a convenience that Rust performs on *arguments* to functions and methods. 
 * It works only on types that implement the `Deref` trait. 
 * It converts types implementing `Deref` into a reference to another type. 
@@ -3114,7 +3114,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * When the `Deref` trait is defined for the types involved, Rust will analyze the types and use `Deref::deref` as many times as necessary to get a reference to match the parameter’s type. 
 * The number of times that `Deref::deref` needs to be inserted is resolved at <u>compile time</u>, so there is no runtime penalty for taking advantage of deref coercion!
 
-#### Deref coercions and Mutability
+### Deref coercions and Mutability
 * Similar to how you use the `Deref` trait to override the `*` operator on immutable references, you can use the `DerefMut` trait to override the `*` operator on *mutable references*.
 * Rust does deref coercion when it finds types and trait implementations in three cases:
   * From `&T` to `&U` when `T: Deref<Target=U>`
@@ -3129,6 +3129,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       * Converting an immutable reference to a mutable reference would require that the initial immutable reference is the only immutable reference to that data, but the borrowing rules don’t guarantee that. 
       * Therefore, Rust can’t make the assumption that converting an immutable reference to a mutable reference is possible.
 
+## Running Code on Cleanup with the Drop Trait
 
 
 
