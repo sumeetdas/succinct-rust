@@ -2936,6 +2936,199 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   In general, C++ implementations obey the zero-overhead principle: What you don’t use, you don’t pay for. And further: What you do use, you couldn’t hand code any better.
   ```
 
+## Smart Pointers
+* A **pointer** is a general concept for a variable that contains an address in memory. 
+  * This address refers to, or “points at,” some other data.
+* The most common kind of pointer in Rust is a reference, which:
+  * is indicated by the `&` symbol and borrow the value they point to. 
+  * does not have any special capabilities other than referring to data. 
+  * does not have any overhead.
+* **Smart pointers** are data structures that not only act like a pointer but also have additional metadata and capabilities. 
+  * Also found in C++ and other languages
+  * Example - **Reference Counting** smart pointer, which enables you to have multiple owners of data by keeping track of the number of owners and, when no owners remain, cleaning up the data.
+* References are pointers that only borrow data; in contrast, in many cases, smart pointers **own** the data they point to.
+* `String` and `Vec<T>` are also examples of smart pointers because they own some memory and allow you to manipulate it
+* Smart pointers are implemented as structs which additionally implement `Deref` and `Drop` traits:
+  * The `Deref` trait allows an instance of the smart pointer struct to behave like a reference so you can write code that works with either references or smart pointers. 
+  *  The `Drop` trait allows you to customize the code that is run when an instance of the smart pointer goes out of scope.
+
+### Using `Box<T>` to Point to Data on the Heap
+* The most straightforward smart pointer is a box, whose type is written `Box<T>`. 
+* Boxes allow you to store data on the heap rather than the stack. 
+* What remains on the stack is the pointer to the heap data. 
+* Boxes don’t have performance overhead, other than storing their data on the heap instead of on the stack.
+* The `Box<T>` type is a smart pointer because it implements the `Deref` trait, which allows `Box<T>` values to be treated like references. 
+* When a `Box<T>` value goes out of scope, the heap data that the box is pointing to is cleaned up as well because of the `Drop` trait implementation.
+* Following sections will elaborate on the capabilities of Box pointers.
+
+#### Using a Box<T> to Store Data on the Heap
+* Example:
+  ```rust
+  fn main() {
+    let b = Box::new(5);
+    println!("b = {}", b);
+  }
+  ```
+  * Variable `b` stores the value of a `Box` that points to the value `5`, which is allocated on the heap. 
+  * This program will print `b = 5`; in this case, we can access the data in the box similar to how we would if this data were on the stack. 
+  * When a box goes out of scope, as b does at the end of main, it will be deallocated. 
+  * The deallocation happens for the box (stored on the stack) and the data it points to (stored on the heap).
+
+#### Enabling Recursive Types with Boxes
+* At compile time, Rust needs to know how much space a type takes up. 
+* One type whose size can’t be known at compile time is a **recursive type**, where a value can have as part of itself another value of the same type. 
+* Because this nesting of values could theoretically continue infinitely, Rust doesn’t know how much space a value of a recursive type needs. 
+* However, boxes have a known size, so by inserting a box in a recursive type definition, you can have recursive types.
+* Linked List is a recursive type:
+  ```rust
+  enum LinkedList {
+    Node(i32, LinkedList),
+    Nil
+  }
+  use crate::LinkedList::{Node, Nil};
+  fn main() {
+    let list = Node(1, Node(2, Node(3, Nil)));
+  }
+  ```
+  Compiling this code would give an error:
+  ```
+    error[E0072]: recursive type `List` has infinite size
+  --> src/main.rs:1:1
+    |
+  1 | enum LinkedList {
+    | ^^^^^^^^^ recursive type has infinite size
+  2 |     Node(i32, LinkedList),
+    |               ---- recursive without indirection
+    |
+  ```
+  * Rust can't figure out the space to allocate during compile time because `LinkedList`'s `Node` type contains `LinkedList` and this pattern could go on indefinitely.
+  * This is why the above error is thrown.
+* To implement recursive types, use `Box<T>`:
+  ```rust
+  enum LinkedList {
+    Node(i32, Box<LinkedList>),
+    Nil
+  }
+  use crate::LinkedList::{Node, Nil};
+  fn main() {
+    let list = Node(1, Box::new(Node(2, Box::new(Node(3, Nil)))));
+  }
+  ```
+  * This works ok because `Node` now contains value (of type `i32`) and a reference to `LinkedList` instance stored on heap.
+    * This reference is of type `Box`, which internally stores the pointer data as `usize`.
+  * Since Rust can now figure out the size of `Node` at compile time, the code compiles without any error.
+
+### Treating Smart Pointers Like Regular References with the `Deref` Trait
+* Implementing the `Deref` trait allows you to customize the behavior of the **dereference operator**, `*`.
+* This allows you to write code that operates on references and smart pointers alike.
+
+#### Following the Pointer to the Value with the Dereference Operator
+* Example:
+  ```rust
+  fn main() {
+    let x = 5;
+    let y = &x;
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+  }
+  ``` 
+  * `y` stores reference to `x`
+  * If we want to make an assertion about the value in y, we have to use `*y` to follow the reference to the value it’s pointing to (hence **dereference**).
+* Trying to do `assert_eq!(5, y);` would result in following error:
+  ```
+    error[E0277]: can't compare `{integer}` with `&{integer}`
+  --> src/main.rs:6:5
+    |
+  6 |     assert_eq!(5, y);
+    |     ^^^^^^^^^^^^^^^^^ no implementation for `{integer} == &{integer}`
+    |
+  ```
+
+#### Using `Box<T>` Like a Reference
+* Example:
+  ```rust
+  fn main() {
+    let x = 5;
+    let y = Box::new(x);
+
+    assert_eq!(5, x);
+    assert_eq!(5, *y);
+  }
+  ```
+  * `y` contains boxed `x` but can be deferenced (via `*y`) because `Box` implements `Deref` trait.
+
+#### Custom type and its `Deref` implementation
+* We create the following struct tuple `Number`:
+  ```rust
+  struct Number<T>(T);
+
+  impl<T> Number<T> {
+      fn new(x: T) -> Number<T> {
+          Number(x)
+      }
+  }
+  ```
+* We now implement `Deref` for `Number`:
+  ```rust
+  use std::ops::Deref;
+
+  impl<T> Deref for Number<T> {
+      type Target = T;
+
+      fn deref(&self) -> &Self::Target {
+          &self.0
+      }
+  }
+  ```
+  * The `type Target = T;` syntax defines an associated type for the Deref trait to use. 
+    * Basically, `Target` defines the type of reference to be returned by `deref` method.
+  * Returning `&self.0` would return reference to the value stored in `Number` instance via `*` operator.
+* Behind the scene, `*y` evaluates to `*(y.deref())`.
+  * `deref` method returns reference to the value.
+  * `*` then does a plain dereference of the reference returned by `deref`.
+* If the `deref` method returned the value directly instead of a reference to the value, the value would be moved out of `self`, which is not desirable.
+
+#### Deref coercions
+* **Deref coercion** is a convenience that Rust performs on *arguments* to functions and methods. 
+* It works only on types that implement the `Deref` trait. 
+* It converts types implementing `Deref` into a reference to another type. 
+* For example, deref coercion can convert `&String` to `&str` because `String` implements the `Deref` trait such that it returns `str`. 
+* Deref coercion happens automatically when we pass a reference to a particular type’s value as an argument to a function or method that doesn’t match the parameter type in the function or method definition. 
+* A sequence of calls to the deref method converts the type we provided into the type the parameter needs.
+* Example:
+  ```rust
+  fn hello(name: &str) {
+    println!("Hello, {}!", name);
+  }
+
+  fn main() {
+    let m = Employee::new(String::from("Rust"));
+    hello(&m);
+  }
+  ```
+  * Because we implemented `Deref` trait for `Employee`, Rust an turn `&Employee<String>` into `&String`.
+    * While implementing `Deref` trait, we set `Target` as `T`. 
+    * Since `T` here is `String`, `deref` method returns reference of `String` type, i.e. `&String`
+  * Rust calls deref again to turn the &String into &str, which matches the hello function’s definition.
+* When the `Deref` trait is defined for the types involved, Rust will analyze the types and use `Deref::deref` as many times as necessary to get a reference to match the parameter’s type. 
+* The number of times that `Deref::deref` needs to be inserted is resolved at <u>compile time</u>, so there is no runtime penalty for taking advantage of deref coercion!
+
+#### Deref coercions and Mutability
+* Similar to how you use the `Deref` trait to override the `*` operator on immutable references, you can use the `DerefMut` trait to override the `*` operator on *mutable references*.
+* Rust does deref coercion when it finds types and trait implementations in three cases:
+  * From `&T` to `&U` when `T: Deref<Target=U>`
+    * It states that if you have a `&T`, and `T` implements `Deref` to some type `U`, you can get a `&U` transparently.
+  * From `&mut T` to `&mut U` when `T: DerefMut<Target=U>`
+    * It states that the same deref coercion happens for mutable references.
+  * From `&mut T` to `&U` when `T: Deref<Target=U>`
+    * Rust will also coerce a mutable reference to an immutable one. 
+      * Because of the borrowing rules, if you have a mutable reference, that mutable reference must be the only reference to that data (otherwise, the program wouldn’t compile). 
+      * Converting one mutable reference to one immutable reference will never break the borrowing rules. 
+    * But the reverse is not possible: immutable references will never coerce to mutable references. 
+      * Converting an immutable reference to a mutable reference would require that the initial immutable reference is the only immutable reference to that data, but the borrowing rules don’t guarantee that. 
+      * Therefore, Rust can’t make the assumption that converting an immutable reference to a mutable reference is possible.
+
 
 
 
