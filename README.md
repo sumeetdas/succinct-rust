@@ -2959,7 +2959,6 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * Boxes don’t have performance overhead, other than storing their data on the heap instead of on the stack.
 * The `Box<T>` type is a smart pointer because it implements the `Deref` trait, which allows `Box<T>` values to be treated like references. 
 * When a `Box<T>` value goes out of scope, the heap data that the box is pointing to is cleaned up as well because of the `Drop` trait implementation.
-* Following sections will elaborate on the capabilities of Box pointers.
 
 ### Using a Box<T> to Store Data on the Heap
 * Example:
