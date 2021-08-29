@@ -3518,4 +3518,24 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * To access the data in a mutex, a thread must first signal that it wants access by asking to acquire the mutex’s lock. 
 * The **lock** is a data structure that is part of the mutex that keeps track of who currently has exclusive access to the data. 
 * Therefore, the mutex is described as guarding the data it holds via the locking system.
+* Rules of working with a mutex:
+  * You must attempt to acquire the lock before using the data.
+  * When you’re done with the data that the mutex guards, you must unlock the data so other threads can acquire the lock.
+
+### `Mutex<T>` API
+* Example:
+  ```rust
+  use std::sync::Mutex;
+
+  fn main() {
+      let m = Mutex::new(5);
+
+      {
+          let mut num = m.lock().unwrap();
+          *num = 6;
+      }
+
+      println!("m = {:?}", m);
+  }
+  ```
 
