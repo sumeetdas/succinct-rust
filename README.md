@@ -2953,12 +2953,13 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   *  The `Drop` trait allows you to customize the code that is run when an instance of the smart pointer goes out of scope.
 
 ## Using `Box<T>` to Point to Data on the Heap
-* The most straightforward smart pointer is a box, whose type is written `Box<T>`. 
-* Boxes allow you to store data on the heap rather than the stack. 
-* What remains on the stack is the pointer to the heap data. 
+* Box is a smart pointer with type as `Box<T>`. 
+  * It allows you to store data on the heap rather than the stack. 
+  * What remains on the stack is the pointer to the heap data. Pointer type is `usize`. 
 * Boxes don’t have performance overhead, other than storing their data on the heap instead of on the stack.
-* The `Box<T>` type is a smart pointer because it implements the `Deref` trait, which allows `Box<T>` values to be treated like references. 
-* When a `Box<T>` value goes out of scope, the heap data that the box is pointing to is cleaned up as well because of the `Drop` trait implementation.
+* The `Box<T>` type is a smart pointer because it implements:
+  * the `Deref` trait, which allows `Box<T>` values to be treated like references. 
+  * the `Drop` trait, which allows the heap data that the `Box<T>` is pointing to get cleaned up when the box value goes out of scope.
 
 ### Using a Box<T> to Store Data on the Heap
 * Example:
@@ -3090,10 +3091,12 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 
 ### Deref coercions
 * **Deref coercion** is a convenience that Rust performs on *arguments* to functions and methods. 
-* It works only on types that implement the `Deref` trait. 
-* It converts types implementing `Deref` into a reference to another type. 
+  * It works only on types that implement the `Deref` trait. 
+  * It converts types implementing `Deref` into a reference to another type. 
 * For example, deref coercion can convert `&String` to `&str` because `String` implements the `Deref` trait such that it returns `str`. 
-* Deref coercion happens automatically when we pass a reference to a particular type’s value as an argument to a function or method that doesn’t match the parameter type in the function or method definition. 
+* Deref coercion happens automatically when there's a mismatch between argument type and the parameter type defined in the function/method. 
+  * E.g. calling a function `funk(&name);` where `name` is of type `String` even though `funk` function is defined as 
+  `funk(val: &str) { /* code */ }`
 * A sequence of calls to the deref method converts the type we provided into the type the parameter needs.
 * Example:
   ```rust
@@ -3109,7 +3112,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * Because we implemented `Deref` trait for `Employee`, Rust an turn `&Employee<String>` into `&String`.
     * While implementing `Deref` trait, we set `Target` as `T`. 
     * Since `T` here is `String`, `deref` method returns reference of `String` type, i.e. `&String`
-  * Rust calls deref again to turn the &String into &str, which matches the hello function’s definition.
+  * Rust calls deref again to turn the `&String` into `&str`, which matches the `hello` function’s definition.
 * When the `Deref` trait is defined for the types involved, Rust will analyze the types and use `Deref::deref` as many times as necessary to get a reference to match the parameter’s type. 
 * The number of times that `Deref::deref` needs to be inserted is resolved at <u>compile time</u>, so there is no runtime penalty for taking advantage of deref coercion!
 
@@ -3130,7 +3133,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 
 ## Running Code on Cleanup with the Drop Trait
 * `Drop` trait is the second trait to implement smart pointer pattern.
-* This trait lets you customize what happens when a value is about to go out of scope.
+  * It lets you customize what happens when a value is about to go out of scope.
 * You can provide an implementation for the `Drop` trait on any type, and the code you specify can be used to release resources like files or network connections. 
 * Rust automatically frees memory when a resource implementing `Drop` trait is no longer in use; no special cleanup code required.
 * Example:
