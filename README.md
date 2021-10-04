@@ -3001,8 +3001,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     |               ---- recursive without indirection
     |
   ```
-  * Rust can't figure out the space to allocate during compile time because `LinkedList`'s `Node` type contains `LinkedList` and this pattern could go on indefinitely.
-  * This is why the above error is thrown.
+  * Rust can't figure out the space to allocate during compile time because `LinkedList`'s `Node` type contains `LinkedList` and this pattern could go on indefinitely. Hence, the error.
 * To implement recursive types, use `Box<T>`:
   ```rust
   enum LinkedList {
@@ -3540,4 +3539,132 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       println!("m = {:?}", m);
   }
   ```
+* We create a `Mutex<T>` using the associated function `new`.
+* To access the data inside the mutex, we use the `lock` method to acquire the lock. 
+  * This call will block the current thread so it can’t do any work until it’s our turn to have the lock.
+* The call to `lock` returns a smart pointer called `MutexGuard`, **wrapped** in a `LockResult`.
+* After we’ve acquired the lock, we can treat the return value, named `num` in this case, as a mutable reference to the data inside.
+* The `MutexGuard` smart pointer implements `Deref` to point at our inner data (`*num = 6`).
+* The smart pointer also has a `Drop` implementation that releases the lock automatically when a `MutexGuard` goes out of scope, which happens at the end of the inner scope.
+* As a result, we don’t risk forgetting to release the lock and blocking the mutex from being used by other threads because the lock release happens automatically.
+* `Mutex<T>` comes with the risk of **deadlocks**, which occur when an operation needs to lock two resources and two threads have each acquired one of the locks, causing them to wait for each other forever. (TODO: Need example)
+
+### Sharing a Mutex<T> Between Multiple Threads
+* We'll write code to spin up 10 threads and have them each increment a counter value by 1, so the counter goes from 0 to 10. 
+* We'll start with this code:
+  ```rust
+  use std::sync::Mutex;
+  use std::thread;
+
+  fn main() {
+      let counter = Mutex::new(0);
+      let mut handles = vec![];
+
+      for _ in 0..10 {
+          let handle = thread::spawn(move || {
+              let mut num = counter.lock().unwrap();
+
+              *num += 1;
+          });
+          handles.push(handle);
+      }
+
+      for handle in handles {
+          handle.join().unwrap();
+      }
+
+      println!("Result: {}", *counter.lock().unwrap());
+  }
+  ```
+  * This results in compilation error because `counter` is moved to `thread` closure in the first iteration of `for` loop, so can't move it again to another thread in remaining iterations.
+* Reference counter pointer `Rc<T>` is used to give a value to multiple owners. Let's try to fix the above code using `Rc<T>`:
+  ```rust
+  fn main() {
+    let counter = Rc::new(Mutex::new(0));
+    let mut handles = vec![];
+
+    for _ in 0..10 {
+        let counter = Rc::clone(&counter);
+        let handle = thread::spawn(move || {
+            let mut num = counter.lock().unwrap();
+
+            *num += 1;
+        });
+        handles.push(handle);
+    }
+
+    for handle in handles {
+        handle.join().unwrap();
+    }
+
+    println!("Result: {}", *counter.lock().unwrap());
+  }
+  ```
+  * This also results in compilation error as `Rc<T>` is not-thread safe.
+  * The compilation error log contains the text: 
+    ```
+    the trait `Send` is not implemented for `Rc<Mutex<i32>>`
+    ```
+  * `Rc<T>` doesn't implement `Send` trait, which is one of the traits that ensures the types can be used in concurrent situations.
+
+### Atomic Reference Counting with `Arc<T>`
+* `Arc<T>` is a type like `Rc<T>` that is safe to use in concurrent situations. 
+* The `A` stands for atomic, meaning it’s an atomically reference counted type. 
+* Atomics work like primitive types but are safe to share across threads.
+* The reason all primitives are not atomic by default is because thread safety comes with a performance penalty.
+  * You don't want that penalty when doing operations within a single thread.
+* We can now fix the above code using `Arc<T>`:
+  ```rust
+  use std::sync::{Arc, Mutex};
+  use std::thread;
+
+  fn main() {
+      let counter = Arc::new(Mutex::new(0));
+      let mut handles = vec![];
+
+      for _ in 0..10 {
+          let counter = Arc::clone(&counter);
+          let handle = thread::spawn(move || {
+              let mut num = counter.lock().unwrap();
+
+              *num += 1;
+          });
+          handles.push(handle);
+      }
+
+      for handle in handles {
+          handle.join().unwrap();
+      }
+
+      println!("Result: {}", *counter.lock().unwrap());
+  }
+  ```
+  * Output:
+    ```
+    Result: 10
+    ```
+
+# Extend Concurrency using `Sync` and `Send` Traits
+* Two concurrency concepts are embedded in the Rust language: the `std::marker` traits `Sync` and `Send`.
+
+## Transfer Ownership Between Threads with `Send`
+* The `Send` marker trait indicates that ownership of values of the type implementing `Send` can be transferred between threads.
+* Almost every Rust type is `Send`, but there are some exceptions, like `Rc<T>` which does not implement `Send`.
+  * Why? Because when we clone an `Rc<T>` value and tried to transfer ownership of the clone to another thread, both threads might update the reference count at the same time.
+  * That's why `Rc<T>` is implemented for use in single-threaded situations where you don’t want to pay the thread-safe performance penalty.
+  * When trying to use `Rc<T>` in threads, we get the following error: `the trait Send is not implemented for Rc<Mutex<i32>>`
+* `Arc<T>` implements `Send` trait, and hence can be used in threads.
+* Any type **composed** entirely of `Send` types is automatically marked as `Send` as well.
+
+## Allowing Access from Multiple Threads with `Sync`
+* The `Sync` marker trait indicates that the immutable reference `&T` of the type `T` implementing `Sync` can be safely sent to multiple threads.
+* Types implementing `Sync`:
+  * Primitive types
+  * Types composed of `Sync` types
+  * The smart pointer `Mutex<T>`
+* Types **not** implementing `Sync`:
+  * The smart pointer `Rc<T>`
+  * The `RefCell<T>` type and the family of related `Cell<T>` types
+    * The implementation of borrow checking that `RefCell<T>` does at runtime is not thread-safe.
+
 
