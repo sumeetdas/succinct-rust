@@ -2642,6 +2642,34 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * Since `i32` implements `Display`, we can do this: 
     `3.to_string()`
 
+## Associated Types
+* **Associated types** specifies placeholder types in trait definitions. E.g. `type SomeType;`
+* The implementor of a trait will specify the concrete type to be used using `type SomeType = i32;` 
+* That way, we can define a trait that uses some types without needing to know exactly what those types are until the trait is implemented.
+* Example - The `Iterator` trait:
+  ```rust
+  pub trait Iterator {
+    type Item;
+
+    fn next(&mut self) -> Option<Self::Item>;
+  }
+  ```
+  * The type `Item` is a placeholder type
+  * The `next` method’s definition shows that it will return values of type `Option<Self::Item>`. 
+  * Implementors of the `Iterator` trait will specify the concrete type for `Item` and the `next` method will return an `Option` containing a value of that concrete type.
+* Example of `Iterator` trait implementor:
+  ```rust
+  impl Iterator for Counter {
+    type Item = u32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // --snip--
+    }
+  }
+  ```
+
+
+
 # Closures
 * Rust’s closures are anonymous functions you can save in a variable or pass as arguments to other functions. 
 * You can create the closure in one place and then call the closure to evaluate it in a different context. 
@@ -3666,5 +3694,115 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * The smart pointer `Rc<T>`
   * The `RefCell<T>` type and the family of related `Cell<T>` types
     * The implementation of borrow checking that `RefCell<T>` does at runtime is not thread-safe.
+
+# Trait objects
+* Suppose we have the following trait `Draw`:
+  ```rust
+  pub trait Draw {
+    fn draw(&self);
+  }
+  ```
+* We have two structs `Button` and `SelectBox` implementing `Draw` trait:
+  ```rust
+  pub struct Button {
+    pub label: String,
+  }
+
+  impl Draw for Button {
+      fn draw(&self) {
+          // code to actually draw a button
+      }
+  }
+
+  struct SelectBox {
+    options: Vec<String>,
+  }
+
+  impl Draw for SelectBox {
+      fn draw(&self) {
+          // code to actually draw a select box
+      }
+  }
+  ```
+* Now, let's say we want to define a struct `Screen` storing instances of types implementing `Draw` trait in a field called `components`.
+  * This way, we can store instances of `Button` and `SelectBox` in `components` field.
+  * We can't define `Screen` as follows:
+    ```rust
+    pub struct Screen<T: Draw> {
+      pub components: Vec<T>,
+    }
+    ```
+    because a generic type parameter can only be substituted with one concrete type at a time.
+* In order to allow for multiple concrete types, we use *trait objects*.
+* **Trait objects** allow for multiple concrete types to fill in for the trait object at runtime.
+  * They are defined as `Box<dyn TRAIT_NAME>`, where `TRAIT_NAME` represents name of the trait the concrete types implement.
+* So, using trait objects, we can defined `Screen` struct as follows:
+  ```rust
+  pub struct Screen {
+    pub components: Vec<Box<dyn Draw>>,
+  }
+  ```
+* Now, we can store instances of `Button` and `SelectBox` in `components` field of `Screen` struct as follows:
+  ```rust
+  fn main() {
+    let screen = Screen {
+        components: vec![
+            Box::new(SelectBox {
+                options: vec![
+                    String::from("Yes"),
+                    String::from("Maybe"),
+                    String::from("No"),
+                ],
+            }),
+            Box::new(Button {
+                label: String::from("OK"),
+            }),
+        ],
+    };
+
+    screen.run();
+  }
+  ```
+* If you try to add a instance of a type which does not implement `Draw` trait to `components` field, you will get a compile-time error.
+
+## Trait Objects Perform Dynamic Dispatch
+* The compiler generates nongeneric implementations of functions and methods for each concrete type that we use in place of a generic type parameter. This is called as **monomorphization**.
+* The code that results from monomorphization is doing **static dispatch**, which is when the compiler knows what method you’re calling at compile time.
+* When we use trait objects, Rust uses *dynamic dispatch*. 
+  * A **dynamic dispatch** is when the compiler can’t tell at compile time which method you’re calling. 
+  * In dynamic dispatch cases, the compiler emits code that at runtime will figure out which method to call.
+* The compiler doesn’t know all the types that might be used with the code that is using trait objects, so it doesn’t know which method implemented on which type to call. 
+* Instead, at runtime, Rust uses the pointers inside the trait object to know which method to call. 
+* There is a runtime cost when this lookup happens that doesn’t occur with static dispatch. 
+* Dynamic dispatch also prevents the compiler from choosing to inline a method’s code, which in turn prevents some optimizations.
+* However, this enables us to store multiple concrete types implementing the same trait in a single vector, so it’s a trade-off to consider.
+
+## Object Safety Is Required for Trait Objects
+* You can only make *object-safe* traits into trait objects.
+* A trait is **object safe** if all the methods defined in the trait have the following properties:
+  * The return type is not `Self`.
+    * The `Self` keyword is an alias for the type we’re implementing the traits or methods on. 
+    * If a trait method returns the concrete `Self` type, but a trait object forgets the exact type that `Self` is, there is no way the method can use the original concrete type.
+  * There are no generic type parameters.
+    * As we know, the generic type parameters are filled in with concrete type parameters when the trait is used.
+    * This way, the concrete types become part of the type that implements the trait. 
+    * When the type is forgotten through the use of a trait object, there is no way to know what types to fill in the generic type parameters with.
+* For example, the following code will result in compile-time error:
+  ```rust
+  pub trait Clone {
+    fn clone(&self) -> Self;
+  }
+
+  pub struct Screen {
+    pub components: Vec<Box<dyn Clone>>,
+  }
+  ```
+  Error:
+  ```
+  error[E0038]: the trait `Clone` cannot be made into an object
+  ```
+
+## 
+
 
 
