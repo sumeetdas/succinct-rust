@@ -20,16 +20,16 @@ let x: i32 = 5;
 i32 here is data type for 32-bit integer values.
 
 # Constants
-* Constants are always immutable, so can't use `mut` with them.
-* Constants always require data type annotation.
-* Constants can be used in any scope, including global scope.
-    * They remain valid in the scope they are defined in.
-* Constants can only be assigned constant values, like string or numbers and not some values computed during runtime (like result of some function call)
 * To define constant:
 ```rust
 const PI:f32 = 3.14;
 ```
 * By convention, constants are named as ALL_CAPS.
+* Constants are always immutable, so can't use `mut` with them.
+* Constants always require data type annotation (e.g. `PI:f32`).
+* Constants can be used in any scope, including global scope.
+    * They remain valid in the scope they are defined in.
+* Constants can only be assigned constant values, like string or numbers and not some values computed during runtime (like result of some function call)
 
 # Shadowing
 * You can reuse same variable name in Rust.
@@ -2839,7 +2839,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     }
   }
   ```
-* Now you would like to implement `OutlinePrint` trait for `Point` struct as follows:
+* Trying to implement `OutlinePrint` trait for `Point` struct:
   ```rust
   struct Point {
     x: i32,
@@ -2848,7 +2848,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 
   impl OutlinePrint for Point {}
   ```
-  This will give you the following error:
+  will result in the following error:
   ```
   error[E0277]: `Point` doesn't implement `std::fmt::Display`
   ```
@@ -2913,9 +2913,9 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   Distance from origin: 5.0
   ```
-* The downside of using this technique is that `Wrapper` is a new type, so it doesn’t have the methods of the value it’s holding. 
-* If we wanted the new type to have every method the inner type has, implementing the `Deref` trait on the `Wrapper` to return the inner type would be a solution. (TODO: example code)
-* If we don’t want the `Wrapper` type to have all the methods of the inner type — for example, to restrict the `Wrapper` type’s behavior — we would have to implement just the methods we do want manually.
+* Disadvantage: `Wrapper` is a new type, so it doesn’t have the methods of the value it’s holding (here, `Point`'s methods are absent from `point`). 
+* For new type to have all methods of the inner type, implement `Deref` trait on the `Wrapper` to return the inner type. (TODO: example code)
+* If `Wrapper` type need to have select methods of inner type, we would have to manually implement them.
 # Closures
 * Rust’s closures are anonymous functions you can save in a variable or pass as arguments to other functions. 
 * You can create the closure in one place and then call the closure to evaluate it in a different context. 
@@ -4012,22 +4012,17 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
 * If you try to add a instance of a type which does not implement `Draw` trait to `components` field, you will get a compile-time error.
 
 ## Trait Objects Perform Dynamic Dispatch
-* The compiler generates nongeneric implementations of functions and methods for each concrete type that we use in place of a generic type parameter. This is called as **monomorphization**.
-* The code that results from monomorphization is doing **static dispatch**, which is when the compiler knows what method you’re calling at compile time.
+* The code that results from monomorphization (discussed [here](#performance-of-code-using-generics)) is doing **static dispatch**, which is when the compiler knows what method you’re calling at compile time.
 * When we use trait objects, Rust uses *dynamic dispatch*. 
   * A **dynamic dispatch** is when the compiler can’t tell at compile time which method you’re calling. 
-  * In dynamic dispatch cases, the compiler emits code that at runtime will figure out which method to call.
-* The compiler doesn’t know all the types that might be used with the code that is using trait objects, so it doesn’t know which method implemented on which type to call. 
-* Instead, at runtime, Rust uses the pointers inside the trait object to know which method to call. 
-* There is a runtime cost when this lookup happens that doesn’t occur with static dispatch. 
-* Dynamic dispatch also prevents the compiler from choosing to inline a method’s code, which in turn prevents some optimizations.
-* However, this enables us to store multiple concrete types implementing the same trait in a single vector, so it’s a trade-off to consider.
+  * In dynamic dispatch cases, the compiler emits code that at runtime will figure out which method to call using the pointers inside the trait object. 
+  * There is a runtime cost with such lookups that doesn’t occur with static dispatch. 
 
 ## Object Safety Is Required for Trait Objects
 * You can only make *object-safe* traits into trait objects.
 * A trait is **object safe** if all the methods defined in the trait have the following properties:
   * The return type is not `Self`.
-    * The `Self` keyword is an alias for the type we’re implementing the traits or methods on. 
+    * The `Self` keyword is an alias for the concret type. 
     * If a trait method returns the concrete `Self` type, but a trait object forgets the exact type that `Self` is, there is no way the method can use the original concrete type.
   * There are no generic type parameters.
     * As we know, the generic type parameters are filled in with concrete type parameters when the trait is used.
