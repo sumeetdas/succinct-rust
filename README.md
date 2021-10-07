@@ -2642,7 +2642,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * Since `i32` implements `Display`, we can do this: 
     `3.to_string()`
 
-## Associated Types
+## [Advanced] Associated Types
 * **Associated types** specifies placeholder types in trait definitions. E.g. `type SomeType;`
 * The implementor of a trait will specify the concrete type to be used using `type SomeType = i32;` 
 * That way, we can define a trait that uses some types without needing to know exactly what those types are until the trait is implemented.
@@ -2668,8 +2668,254 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
+## [Advanced] Default Generic Type Parameters
+* When we use generic type parameters, we can specify a default concrete type for the generic type. 
+* This eliminates the need for implementors of the trait to specify a concrete type if the default type works. 
+* The syntax for specifying a default type for a generic type is `<PlaceholderGenericType=ConcreteType>` when declaring the generic type.
+* Example - The `Add` trait in `std::ops`:
+  ```rust
+  trait Add<Rhs=Self> {
+      type Output;
 
+      fn add(self, rhs: Rhs) -> Self::Output;
+  }
+  ```
+  * `type Output;` is associated type, referenced by `Self::Output`.
+  * `Rhs=Self` syntax is called **default type parameters**.
+  *  The `Rhs` generic type parameter (short for “right hand side”) defines the type of the rhs parameter in the add method. 
+  *  If we don’t specify a concrete type for `Rhs` when we implement the `Add` trait, the type of `Rhs` will default to `Self`, which will be the type we’re implementing `Add` on.
+     *  Example: if we implement `Add` for `Point` struct as
+        ```rust
+        impl Add for Point {
+          //..
+        }
+        ``` 
+        where we don't provide the value of `Rhs` type, then 
+        *  `Rhs` will equate to `Self`, and 
+        *  `Self` in this case will equate to `Point`.
 
+## [Advanced] Operator Overloading
+* **Operator overloading** is customizing the behavior of an operator (such as `+`) in particular situations.
+* Suppose you have a `Point` struct defined as:
+  ```rust
+  struct Point {
+    x: i32,
+    y: i32,
+  }
+  ```
+  and you want to perform addition of two `Point` instances using `+` operator:
+  ```rust
+  assert_eq!(
+        Point { x: 1, y: 0 } + Point { x: 2, y: 3 },
+        Point { x: 3, y: 3 }
+    );
+  ```
+* You can do so by overloading the `+` operator for `Point` struct. This can be done by implementing `Add` trait (discussed above)  for `Point`:
+  ```rust
+  impl Add for Point {
+    type Output = Point;
+
+    fn add(self, other: Point) -> Point {
+        Point {
+            x: self.x + other.x,
+            y: self.y + other.y,
+        }
+    }
+  }
+  ```
+* Since `Rhs` type's default is `Self` (equal to `Point` here) and associated type `Output` is set as `Point` in the trait implementation, the above code compiles OK.
+* For the sake of completeness, here's how to overload `+` operator when RHS is of different type:
+  ```rust
+  struct Millimeters(u32);
+  struct Meters(u32);
+
+  impl Add<Meters> for Millimeters {
+      type Output = Millimeters;
+
+      fn add(self, other: Meters) -> Millimeters {
+          Millimeters(self.0 + (other.0 * 1000))
+      }
+  }
+  ```
+  * With this, you can perform the following:
+    ```rust
+    assert_eq!(
+      Millimeters(1000) + Meters(1),
+      Millimeters(2000)
+    );
+    ```
+
+## [Advanced] Fully Qualified Syntax for methods
+* Suppose you have a struct `Game` which implements traits `GameStop` and `Amazon`. 
+  * Both `GameStop` and `Amazon` traits have `price` method.
+  * `Game` struct also implements its own `price` method.
+* Code:
+  ```rust
+  trait GameStop {
+    pub price(&self) -> u32;
+  }
+
+  trait Amazon {
+    pub price(&self) -> u32;
+  }
+  
+  struct Game;
+  impl Game {
+    pub price(&self) -> u32 { 100 }
+  }
+
+  impl GameStop for Game {
+    pub price(&self) -> u32 { 200 }
+  }
+
+  impl Amazon for Game {
+    pub price(&self) -> u32 { 150 }
+  }
+  ```
+* Calling `game.price()` method, where `game` is an instance of `Game` would return `100`.
+  * Rust calls the struct method if it is defined, ignoring trait implementation methods.
+* To call trait implementation methods, use `<TRAIT_NAME>::<METHOD_NAME>(..)` syntax:
+  ```rust
+  fn main() {
+    let game = Game{};
+    println!("Game price: {}", game.price());
+    println!("Game price: {}", Game::price(&game));
+    println!("GameStop price: {}", GameStop::price(&game));
+    println!("Amazon price: {}", Amazon::price(&game));
+  }
+  ```
+  Output:
+  ```
+  Game price: 100
+  Game price: 100
+  GameStop price: 200
+  Amazon price: 150
+  ```
+  * As seen above, `game.price()` can also be written as `Game::price(&game)`.
+
+## [Advanced] Fully Qualified Syntax for Associated Functions
+* Associated functions don't have `self` or its variants (like `&self`) as first parameters.
+* So, if a trait implementation and struct implementation has the same associated function, then use `<STRUCT_NAME as TRAIT_NAME>::<FUNCTION_NAME>(...)` syntax:
+  ```rust
+  trait Premium {
+    pub price() -> u32;
+  }
+  struct Cabbage;
+  impl Cabbage {
+    pub price() -> u32 { 20 }
+  }
+
+  impl Premium for Cabbage {
+    pub price() -> u32 { 40 }
+  }
+
+  fn main() {
+    println!("Cabbage price: {}", Cabbage::price());
+    println!("Premium Cabbage price: {}", <Cabbage as Premium>::price());
+  }
+  ```
+  Output:
+  ```
+  Cabbage price: 20
+  Premium Cabbage price: 40
+  ```
+
+## [Advanced] Supertraits
+* When trait `A` requires trait `B` to also be implemented in order to function, then trait `B` is called a **supertrait**.
+* Example:
+  ```rust
+  use std::fmt;
+
+  trait OutlinePrint: fmt::Display {
+    fn outline_print(&self) {
+        // `to_string` method defined in `Display` trait
+        let output = self.to_string();
+        let len = output.len();
+        println!("{}", "*".repeat(len + 4));
+        println!("*{}*", " ".repeat(len + 2));
+        println!("* {} *", output);
+        println!("*{}*", " ".repeat(len + 2));
+        println!("{}", "*".repeat(len + 4));
+    }
+  }
+  ```
+* Now you would like to implement `OutlinePrint` trait for `Point` struct as follows:
+  ```rust
+  struct Point {
+    x: i32,
+    y: i32,
+  }
+
+  impl OutlinePrint for Point {}
+  ```
+  This will give you the following error:
+  ```
+  error[E0277]: `Point` doesn't implement `std::fmt::Display`
+  ```
+  That's correct! `Point` doesn't implement `Display` trait.
+* Let's fix the above error by implementing `Display` trait for `Point`:
+  ```rust
+  use std::fmt;
+
+  impl fmt::Display for Point {
+      fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+          write!(f, "({}, {})", self.x, self.y)
+      }
+  }
+  ```
+* Now, running `point.outline_print()`, where `point` is an instance of `Point` struct will give the following output:
+  ```
+  **********
+  *        *
+  * (1, 3) *
+  *        *
+  **********
+  ```
+
+## [Advanced] Newtype Pattern
+* In Rust, in order to implement a trait for a type, either the trait or the type should be local to our crate.
+* Using **newtype pattern**, we can implement external traits on external types.
+  * This involves creating a new type in a tuple struct.
+  * The tuple struct will have one field and be a thin wrapper around the type we want to implement a trait for.
+  * Then the wrapper type is local to our crate, and we can implement the trait on the wrapper.
+  * **Newtype** is a term that originates from the Haskell programming language.
+  * There is no runtime performance penalty for using this pattern
+* Example, `Point` struct and `Distance` trait are external to our crate and are defined in `das` crate. We can implement `Distance` trait for `Point` struct as follows:
+  ```rust
+  // das crate
+  pub struct Point {
+    x: u32,
+    y: u32
+  }
+  pub trait Distance {
+    pub distance_from_origin(&self) -> f64;
+  }
+
+  // local crate
+  use das::{Point, Distance};
+  use std::num::sqrt;
+
+  struct Wrapper(Point);
+
+  impl Distance for Wrapper {
+    pub distance_from_origin(&self) -> f64 {
+      let sum = (self.0.x * self.0.x) + (self.0.y * self.0.y);
+      (sum as f64).sqrt()
+    }
+  }
+
+  fn main() {
+    let point = Wrapper(Point{x: 3, y: 4});
+    println!("Distance from origin: {}", point.distance_from_origin());
+  }
+  ```
+  Output:
+  ```
+  Distance from origin: 5.0
+  ```
+* The downside of using this technique is that `Wrapper` is a new type, so it doesn’t have the methods of the value it’s holding. 
+* If we wanted the new type to have every method the inner type has, implementing the `Deref` trait on the `Wrapper` to return the inner type would be a solution. (TODO: example code)
+* If we don’t want the `Wrapper` type to have all the methods of the inner type — for example, to restrict the `Wrapper` type’s behavior — we would have to implement just the methods we do want manually.
 # Closures
 * Rust’s closures are anonymous functions you can save in a variable or pass as arguments to other functions. 
 * You can create the closure in one place and then call the closure to evaluate it in a different context. 
@@ -3802,7 +4048,5 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   error[E0038]: the trait `Clone` cannot be made into an object
   ```
 
-## 
-
-
-
+## Returning a Closure
+* 
