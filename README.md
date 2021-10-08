@@ -2263,7 +2263,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       Ok(())
   }
   ```
-  * The `Box<dyn Error>` type is called a [**trait object**](#trait-objects).
+  * The `Box<dyn Error>` type is called a [**trait object**](advanced.md#trait-objects).
     * Here, it means “any kind of error.”
 
 # Generic Data Types
@@ -3114,107 +3114,3 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   In general, C++ implementations obey the zero-overhead principle: What you don’t use, you don’t pay for. And further: What you do use, you couldn’t hand code any better.
   ```
 
-# Trait objects
-* Suppose we have the following trait `Draw`:
-  ```rust
-  pub trait Draw {
-    fn draw(&self);
-  }
-  ```
-* We have two structs `Button` and `SelectBox` implementing `Draw` trait:
-  ```rust
-  pub struct Button {
-    pub label: String,
-  }
-
-  impl Draw for Button {
-      fn draw(&self) {
-          // code to actually draw a button
-      }
-  }
-
-  struct SelectBox {
-    options: Vec<String>,
-  }
-
-  impl Draw for SelectBox {
-      fn draw(&self) {
-          // code to actually draw a select box
-      }
-  }
-  ```
-* Now, let's say we want to define a struct `Screen` storing instances of types implementing `Draw` trait in a field called `components`.
-  * This way, we can store instances of `Button` and `SelectBox` in `components` field.
-  * We can't define `Screen` as follows:
-    ```rust
-    pub struct Screen<T: Draw> {
-      pub components: Vec<T>,
-    }
-    ```
-    because a generic type parameter can only be substituted with one concrete type at a time.
-* In order to allow for multiple concrete types, we use *trait objects*.
-* **Trait objects** allow for multiple concrete types to fill in for the trait object at runtime.
-  * They are defined as `Box<dyn TRAIT_NAME>`, where `TRAIT_NAME` represents name of the trait the concrete types implement.
-* So, using trait objects, we can defined `Screen` struct as follows:
-  ```rust
-  pub struct Screen {
-    pub components: Vec<Box<dyn Draw>>,
-  }
-  ```
-* Now, we can store instances of `Button` and `SelectBox` in `components` field of `Screen` struct as follows:
-  ```rust
-  fn main() {
-    let screen = Screen {
-        components: vec![
-            Box::new(SelectBox {
-                options: vec![
-                    String::from("Yes"),
-                    String::from("Maybe"),
-                    String::from("No"),
-                ],
-            }),
-            Box::new(Button {
-                label: String::from("OK"),
-            }),
-        ],
-    };
-
-    screen.run();
-  }
-  ```
-* If you try to add a instance of a type which does not implement `Draw` trait to `components` field, you will get a compile-time error.
-
-## Trait Objects Perform Dynamic Dispatch
-* The code that results from monomorphization (discussed [here](#performance-of-code-using-generics)) is doing **static dispatch**, which is when the compiler knows what method you’re calling at compile time.
-* When we use trait objects, Rust uses *dynamic dispatch*. 
-  * A **dynamic dispatch** is when the compiler can’t tell at compile time which method you’re calling. 
-  * In dynamic dispatch cases, the compiler emits code that at runtime will figure out which method to call using the pointers inside the trait object. 
-  * There is a runtime cost with such lookups that doesn’t occur with static dispatch. 
-
-## Object Safety Is Required for Trait Objects
-* You can only make *object-safe* traits into trait objects.
-* A trait is **object safe** if all the methods defined in the trait have the following properties:
-  * The return type is not `Self`.
-    * The `Self` keyword is an alias for the concret type. 
-    * If a trait method returns the concrete `Self` type, but a trait object forgets the exact type that `Self` is, there is no way the method can use the original concrete type.
-  * There are no generic type parameters.
-    * As we know, the generic type parameters are filled in with concrete type parameters when the trait is used.
-    * This way, the concrete types become part of the type that implements the trait. 
-    * When the type is forgotten through the use of a trait object, there is no way to know what types to fill in the generic type parameters with.
-* For example, the following code will result in compile-time error:
-  ```rust
-  pub trait Clone {
-    fn clone(&self) -> Self;
-  }
-
-  pub struct Screen {
-    pub components: Vec<Box<dyn Clone>>,
-  }
-  ```
-  Error:
-  ```
-  error[E0038]: the trait `Clone` cannot be made into an object
-  ```
-
-## Returning a Closure
-* 
