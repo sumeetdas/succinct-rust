@@ -17,7 +17,7 @@ As you can see, mentioning data type of variable is optional, as Rust compiler c
 let x: i32 = 5;
 ```
 
-i32 here is data type for 32-bit integer values.
+`i32` here is data type for 32-bit integer values.
 
 # Constants
 * To define constant:
@@ -2263,7 +2263,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       Ok(())
   }
   ```
-  * The `Box<dyn Error>` type is called a **trait object**.
+  * The `Box<dyn Error>` type is called a [**trait object**](#trait-objects).
     * Here, it means “any kind of error.”
 
 # Generic Data Types
@@ -2642,7 +2642,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     * Since `i32` implements `Display`, we can do this: 
     `3.to_string()`
 
-## [Advanced] Associated Types
+## Associated Types
 * **Associated types** specifies placeholder types in trait definitions. E.g. `type SomeType;`
 * The implementor of a trait will specify the concrete type to be used using `type SomeType = i32;` 
 * That way, we can define a trait that uses some types without needing to know exactly what those types are until the trait is implemented.
@@ -2668,7 +2668,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   }
   ```
 
-## [Advanced] Default Generic Type Parameters
+## Default Generic Type Parameters
 * When we use generic type parameters, we can specify a default concrete type for the generic type. 
 * This eliminates the need for implementors of the trait to specify a concrete type if the default type works. 
 * The syntax for specifying a default type for a generic type is `<PlaceholderGenericType=ConcreteType>` when declaring the generic type.
@@ -2694,7 +2694,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
         *  `Rhs` will equate to `Self`, and 
         *  `Self` in this case will equate to `Point`.
 
-## [Advanced] Operator Overloading
+## Operator Overloading
 * **Operator overloading** is customizing the behavior of an operator (such as `+`) in particular situations.
 * Suppose you have a `Point` struct defined as:
   ```rust
@@ -2745,7 +2745,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     );
     ```
 
-## [Advanced] Fully Qualified Syntax for methods
+## Fully Qualified Syntax for methods
 * Suppose you have a struct `Game` which implements traits `GameStop` and `Amazon`. 
   * Both `GameStop` and `Amazon` traits have `price` method.
   * `Game` struct also implements its own `price` method.
@@ -2793,8 +2793,8 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   * As seen above, `game.price()` can also be written as `Game::price(&game)`.
 
-## [Advanced] Fully Qualified Syntax for Associated Functions
-* Associated functions don't have `self` or its variants (like `&self`) as first parameters.
+## Fully Qualified Syntax for Associated Functions
+* Associated functions don't have `self` or its variants (like `&self`) as a first parameter.
 * So, if a trait implementation and struct implementation has the same associated function, then use `<STRUCT_NAME as TRAIT_NAME>::<FUNCTION_NAME>(...)` syntax:
   ```rust
   trait Premium {
@@ -2820,102 +2820,6 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   Premium Cabbage price: 40
   ```
 
-## [Advanced] Supertraits
-* When trait `A` requires trait `B` to also be implemented in order to function, then trait `B` is called a **supertrait**.
-* Example:
-  ```rust
-  use std::fmt;
-
-  trait OutlinePrint: fmt::Display {
-    fn outline_print(&self) {
-        // `to_string` method defined in `Display` trait
-        let output = self.to_string();
-        let len = output.len();
-        println!("{}", "*".repeat(len + 4));
-        println!("*{}*", " ".repeat(len + 2));
-        println!("* {} *", output);
-        println!("*{}*", " ".repeat(len + 2));
-        println!("{}", "*".repeat(len + 4));
-    }
-  }
-  ```
-* Trying to implement `OutlinePrint` trait for `Point` struct:
-  ```rust
-  struct Point {
-    x: i32,
-    y: i32,
-  }
-
-  impl OutlinePrint for Point {}
-  ```
-  will result in the following error:
-  ```
-  error[E0277]: `Point` doesn't implement `std::fmt::Display`
-  ```
-  That's correct! `Point` doesn't implement `Display` trait.
-* Let's fix the above error by implementing `Display` trait for `Point`:
-  ```rust
-  use std::fmt;
-
-  impl fmt::Display for Point {
-      fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-          write!(f, "({}, {})", self.x, self.y)
-      }
-  }
-  ```
-* Now, running `point.outline_print()`, where `point` is an instance of `Point` struct will give the following output:
-  ```
-  **********
-  *        *
-  * (1, 3) *
-  *        *
-  **********
-  ```
-
-## [Advanced] Newtype Pattern
-* In Rust, in order to implement a trait for a type, either the trait or the type should be local to our crate.
-* Using **newtype pattern**, we can implement external traits on external types.
-  * This involves creating a new type in a tuple struct.
-  * The tuple struct will have one field and be a thin wrapper around the type we want to implement a trait for.
-  * Then the wrapper type is local to our crate, and we can implement the trait on the wrapper.
-  * **Newtype** is a term that originates from the Haskell programming language.
-  * There is no runtime performance penalty for using this pattern
-* Example, `Point` struct and `Distance` trait are external to our crate and are defined in `das` crate. We can implement `Distance` trait for `Point` struct as follows:
-  ```rust
-  // das crate
-  pub struct Point {
-    x: u32,
-    y: u32
-  }
-  pub trait Distance {
-    pub distance_from_origin(&self) -> f64;
-  }
-
-  // local crate
-  use das::{Point, Distance};
-  use std::num::sqrt;
-
-  struct Wrapper(Point);
-
-  impl Distance for Wrapper {
-    pub distance_from_origin(&self) -> f64 {
-      let sum = (self.0.x * self.0.x) + (self.0.y * self.0.y);
-      (sum as f64).sqrt()
-    }
-  }
-
-  fn main() {
-    let point = Wrapper(Point{x: 3, y: 4});
-    println!("Distance from origin: {}", point.distance_from_origin());
-  }
-  ```
-  Output:
-  ```
-  Distance from origin: 5.0
-  ```
-* Disadvantage: `Wrapper` is a new type, so it doesn’t have the methods of the value it’s holding (here, `Point`'s methods are absent from `point`). 
-* For new type to have all methods of the inner type, implement `Deref` trait on the `Wrapper` to return the inner type. (TODO: example code)
-* If `Wrapper` type need to have select methods of inner type, we would have to manually implement them.
 # Closures
 * Rust’s closures are anonymous functions you can save in a variable or pass as arguments to other functions. 
 * You can create the closure in one place and then call the closure to evaluate it in a different context. 
@@ -3209,286 +3113,6 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   In general, C++ implementations obey the zero-overhead principle: What you don’t use, you don’t pay for. And further: What you do use, you couldn’t hand code any better.
   ```
-
-# Smart Pointers
-* A **pointer** is a general concept for a variable that contains an address in memory. 
-  * This address refers to, or “points at,” some other data.
-* The most common kind of pointer in Rust is a reference, which:
-  * is indicated by the `&` symbol and borrow the value they point to. 
-  * does not have any special capabilities other than referring to data. 
-  * does not have any overhead.
-* **Smart pointers** are data structures that not only act like a pointer but also have additional metadata and capabilities. 
-  * Also found in C++ and other languages
-  * Example - **Reference Counting** smart pointer, which enables you to have multiple owners of data by keeping track of the number of owners and, when no owners remain, cleaning up the data.
-* References are pointers that only borrow data; in contrast, in many cases, smart pointers **own** the data they point to.
-* `String` and `Vec<T>` are also examples of smart pointers because they own some memory and allow you to manipulate it
-* Smart pointers are implemented as structs which additionally implement `Deref` and `Drop` traits:
-  * The `Deref` trait allows an instance of the smart pointer struct to behave like a reference so you can write code that works with either references or smart pointers. 
-  *  The `Drop` trait allows you to customize the code that is run when an instance of the smart pointer goes out of scope.
-
-## Using `Box<T>` to Point to Data on the Heap
-* Box is a smart pointer with type as `Box<T>`. 
-  * It allows you to store data on the heap rather than the stack. 
-  * What remains on the stack is the pointer to the heap data. Pointer type is `usize`. 
-* Boxes don’t have performance overhead, other than storing their data on the heap instead of on the stack.
-* The `Box<T>` type is a smart pointer because it implements:
-  * the `Deref` trait, which allows `Box<T>` values to be treated like references. 
-  * the `Drop` trait, which allows the heap data that the `Box<T>` is pointing to get cleaned up when the box value goes out of scope.
-
-### Using a Box<T> to Store Data on the Heap
-* Example:
-  ```rust
-  fn main() {
-    let b = Box::new(5);
-    println!("b = {}", b);
-  }
-  ```
-  * Variable `b` stores the value of a `Box` that points to the value `5`, which is allocated on the heap. 
-  * This program will print `b = 5`; in this case, we can access the data in the box similar to how we would if this data were on the stack. 
-  * When a box goes out of scope, as b does at the end of main, it will be deallocated. 
-  * The deallocation happens for the box (stored on the stack) and the data it points to (stored on the heap).
-
-### Enabling Recursive Types with Boxes
-* At compile time, Rust needs to know how much space a type takes up. 
-* One type whose size can’t be known at compile time is a **recursive type**, where a value can have as part of itself another value of the same type. 
-* Because this nesting of values could theoretically continue infinitely, Rust doesn’t know how much space a value of a recursive type needs. 
-* However, boxes have a known size, so by inserting a box in a recursive type definition, you can have recursive types.
-* Linked List is a recursive type:
-  ```rust
-  enum LinkedList {
-    Node(i32, LinkedList),
-    Nil
-  }
-  use crate::LinkedList::{Node, Nil};
-  fn main() {
-    let list = Node(1, Node(2, Node(3, Nil)));
-  }
-  ```
-  Compiling this code would give an error:
-  ```
-    error[E0072]: recursive type `List` has infinite size
-  --> src/main.rs:1:1
-    |
-  1 | enum LinkedList {
-    | ^^^^^^^^^ recursive type has infinite size
-  2 |     Node(i32, LinkedList),
-    |               ---- recursive without indirection
-    |
-  ```
-  * Rust can't figure out the space to allocate during compile time because `LinkedList`'s `Node` type contains `LinkedList` and this pattern could go on indefinitely. Hence, the error.
-* To implement recursive types, use `Box<T>`:
-  ```rust
-  enum LinkedList {
-    Node(i32, Box<LinkedList>),
-    Nil
-  }
-  use crate::LinkedList::{Node, Nil};
-  fn main() {
-    let list = Node(1, Box::new(Node(2, Box::new(Node(3, Nil)))));
-  }
-  ```
-  * This works ok because `Node` now contains value (of type `i32`) and a reference to `LinkedList` instance stored on heap.
-    * This reference is of type `Box`, which internally stores the pointer data as `usize`.
-  * Since Rust can now figure out the size of `Node` at compile time, the code compiles without any error.
-
-## Treating Smart Pointers Like Regular References with the `Deref` Trait
-* Implementing the `Deref` trait allows you to customize the behavior of the **dereference operator**, `*`.
-* This allows you to write code that operates on references and smart pointers alike.
-
-### Following the Pointer to the Value with the Dereference Operator
-* Example:
-  ```rust
-  fn main() {
-    let x = 5;
-    let y = &x;
-
-    assert_eq!(5, x);
-    assert_eq!(5, *y);
-  }
-  ``` 
-  * `y` stores reference to `x`
-  * If we want to make an assertion about the value in y, we have to use `*y` to follow the reference to the value it’s pointing to (hence **dereference**).
-* Trying to do `assert_eq!(5, y);` would result in following error:
-  ```
-    error[E0277]: can't compare `{integer}` with `&{integer}`
-  --> src/main.rs:6:5
-    |
-  6 |     assert_eq!(5, y);
-    |     ^^^^^^^^^^^^^^^^^ no implementation for `{integer} == &{integer}`
-    |
-  ```
-
-### Using `Box<T>` Like a Reference
-* Example:
-  ```rust
-  fn main() {
-    let x = 5;
-    let y = Box::new(x);
-
-    assert_eq!(5, x);
-    assert_eq!(5, *y);
-  }
-  ```
-  * `y` contains boxed `x` but can be deferenced (via `*y`) because `Box` implements `Deref` trait.
-
-### Custom type and its `Deref` implementation
-* We create the following struct tuple `Number`:
-  ```rust
-  struct Number<T>(T);
-
-  impl<T> Number<T> {
-      fn new(x: T) -> Number<T> {
-          Number(x)
-      }
-  }
-  ```
-* We now implement `Deref` for `Number`:
-  ```rust
-  use std::ops::Deref;
-
-  impl<T> Deref for Number<T> {
-      type Target = T;
-
-      fn deref(&self) -> &Self::Target {
-          &self.0
-      }
-  }
-  ```
-  * The `type Target = T;` syntax defines an associated type for the Deref trait to use. 
-    * Basically, `Target` defines the type of reference to be returned by `deref` method.
-  * Returning `&self.0` would return reference to the value stored in `Number` instance via `*` operator.
-* Behind the scene, `*y` evaluates to `*(y.deref())`.
-  * `deref` method returns reference to the value.
-  * `*` then does a plain dereference of the reference returned by `deref`.
-* If the `deref` method returned the value directly instead of a reference to the value, the value would be moved out of `self`, which is not desirable.
-
-### Deref coercions
-* **Deref coercion** is a convenience that Rust performs on *arguments* to functions and methods. 
-  * It works only on types that implement the `Deref` trait. 
-  * It converts types implementing `Deref` into a reference to another type. 
-* For example, deref coercion can convert `&String` to `&str` because `String` implements the `Deref` trait such that it returns `str`. 
-* Deref coercion happens automatically when there's a mismatch between argument type and the parameter type defined in the function/method. 
-  * E.g. calling a function `funk(&name);` where `name` is of type `String` even though `funk` function is defined as 
-  `funk(val: &str) { /* code */ }`
-* A sequence of calls to the deref method converts the type we provided into the type the parameter needs.
-* Example:
-  ```rust
-  fn hello(name: &str) {
-    println!("Hello, {}!", name);
-  }
-
-  fn main() {
-    let m = Employee::new(String::from("Rust"));
-    hello(&m);
-  }
-  ```
-  * Because we implemented `Deref` trait for `Employee`, Rust an turn `&Employee<String>` into `&String`.
-    * While implementing `Deref` trait, we set `Target` as `T`. 
-    * Since `T` here is `String`, `deref` method returns reference of `String` type, i.e. `&String`
-  * Rust calls deref again to turn the `&String` into `&str`, which matches the `hello` function’s definition.
-* When the `Deref` trait is defined for the types involved, Rust will analyze the types and use `Deref::deref` as many times as necessary to get a reference to match the parameter’s type. 
-* The number of times that `Deref::deref` needs to be inserted is resolved at <u>compile time</u>, so there is no runtime penalty for taking advantage of deref coercion!
-
-### Deref coercions and Mutability
-* Similar to how you use the `Deref` trait to override the `*` operator on immutable references, you can use the `DerefMut` trait to override the `*` operator on *mutable references*.
-* Rust does deref coercion when it finds types and trait implementations in three cases:
-  * From `&T` to `&U` when `T: Deref<Target=U>`
-    * It states that if you have a `&T`, and `T` implements `Deref` to some type `U`, you can get a `&U` transparently.
-  * From `&mut T` to `&mut U` when `T: DerefMut<Target=U>`
-    * It states that the same deref coercion happens for mutable references.
-  * From `&mut T` to `&U` when `T: Deref<Target=U>`
-    * Rust will also coerce a mutable reference to an immutable one. 
-      * Because of the borrowing rules, if you have a mutable reference, that mutable reference must be the only reference to that data (otherwise, the program wouldn’t compile). 
-      * Converting one mutable reference to one immutable reference will never break the borrowing rules. 
-    * But the reverse is not possible: immutable references will never coerce to mutable references. 
-      * Converting an immutable reference to a mutable reference would require that the initial immutable reference is the only immutable reference to that data, but the borrowing rules don’t guarantee that. 
-      * Therefore, Rust can’t make the assumption that converting an immutable reference to a mutable reference is possible.
-
-## Running Code on Cleanup with the Drop Trait
-* `Drop` trait is the second trait to implement smart pointer pattern.
-  * It lets you customize what happens when a value is about to go out of scope.
-* You can provide an implementation for the `Drop` trait on any type, and the code you specify can be used to release resources like files or network connections. 
-* Rust automatically frees memory when a resource implementing `Drop` trait is no longer in use; no special cleanup code required.
-* Example:
-  ```rust
-  struct CustomSmartPointer {
-    data: String,
-  }
-
-  impl Drop for CustomSmartPointer {
-      fn drop(&mut self) {
-          println!("Dropping CustomSmartPointer with data `{}`!", self.data);
-      }
-  }
-
-  fn main() {
-      let c = CustomSmartPointer {
-          data: String::from("my stuff"),
-      };
-      let d = CustomSmartPointer {
-          data: String::from("other stuff"),
-      };
-      println!("CustomSmartPointers created.");
-  }
-  ```
-  Output:
-  ```
-  CustomSmartPointers created.
-  Dropping CustomSmartPointer with data `other stuff`!
-  Dropping CustomSmartPointer with data `my stuff`!
-  ```
-  * The body of the `drop` function is where you would place any logic that you wanted to run when an instance of your type goes out of scope. 
-  * Rust automatically called `drop` for us when our instances went out of scope, calling the code we specified. 
-  * Variables are dropped in the reverse order of their creation, so `c` was dropped first and then `d`.
-* We don't have to worry about problems resulting from accidentally cleaning up values still in use: the ownership system that makes sure references are always valid also *ensures* that drop gets called only once when the value is no longer being used.
-
-### Dropping a Value Early with `std::mem::drop`
-* Suppose you want to drop a value manually before end of scope. You can't call `drop` method manually:
-  ```rust
-  fn main() {
-    let c = CustomSmartPointer {
-        data: String::from("some data"),
-    };
-    println!("CustomSmartPointer created.");
-    c.drop();
-    println!("CustomSmartPointer dropped before the end of main.");
-  }
-  ```
-  Doing so would throw the following error:
-  ```
-    error[E0040]: explicit use of destructor method
-    --> src/main.rs:16:7
-    |
-  16 |     c.drop();
-    |     --^^^^--
-    |     | |
-    |     | explicit destructor calls not allowed
-    |     help: consider using `drop` function: `drop(c)`
-
-  ```
-  * This error message states that we’re not allowed to explicitly call `drop`. 
-  * The error message uses the term **destructor**, which is the general programming term for a function that cleans up an instance. 
-    * The drop function in Rust is one particular destructor.
-  * Rust doesn’t let us call `drop` explicitly because Rust would still automatically call `drop` on the value at the end of main. 
-    * This would be a **double free** error because Rust would be trying to clean up the same value twice.
-* To force a value to be dropped before end of scope, use `std::mem::drop`:
-  ```rust
-  fn main() {
-    let c = CustomSmartPointer {
-        data: String::from("some data"),
-    };
-    println!("CustomSmartPointer created.");
-    drop(c);
-    println!("CustomSmartPointer dropped before the end of main.");
-  }
-  ```
-  Output:
-  ```
-  CustomSmartPointer created.
-  Dropping CustomSmartPointer with data `some data`!
-  CustomSmartPointer dropped before the end of main.
-  ```
-  * Second message `Dropping CustomSmartPointer..` tells us that `c` was dropped before end of scope of `main` function.
 
 # Trait objects
 * Suppose we have the following trait `Draw`:
