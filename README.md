@@ -1,5 +1,5 @@
 # Succinct Rust
-This repo contains succinct notes on Rust programming language.
+This repo contains my notes on Rust programming language.
 
 # Variables
 * To define an immutable variable:
