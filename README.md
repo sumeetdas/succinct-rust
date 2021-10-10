@@ -1,23 +1,21 @@
-# rust-in-one-page
-I document all I know about Rust programming language in this one page.
+# Succinct Rust
+This repo contains succinct notes on Rust programming language.
 
 # Variables
-To define an immutable variable:
-```rust
-let x = 5;
-```
-
-To define a mutable variable, add `mut` after `let`
-```rust
-let mut x = 5;
-```
-
-As you can see, mentioning data type of variable is optional, as Rust compiler can infer data type from RHS value. If you want to specify data type, you can do so as:
-```rust
-let x: i32 = 5;
-```
-
-`i32` here is data type for 32-bit integer values.
+* To define an immutable variable:
+  ```rust
+  let x = 5;
+  ```
+* To define a mutable variable, add `mut` after `let`:
+  ```rust
+  let mut x = 5;
+  ```
+* As you can see, mentioning data type of variable is optional, as Rust compiler can infer data type from RHS value. 
+* If you want to specify data type, you can do so as:
+  ```rust
+  let x: i32 = 5;
+  ```
+  * `i32` here is data type for 32-bit integer values.
 
 # Constants
 * To define constant:
@@ -128,7 +126,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     print!("Inside da_func()");
   }
   ```
-  Result:
+  Output:
   ```
   Inside main()
   Inside da_func()
@@ -169,7 +167,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   };
   print!("x = {}, y = {}", x, y);
   ``` 
-  Result:
+  Output:
   ```
   x = 5, y = 4
   ```
@@ -272,8 +270,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     print!("{} ",a);
   }
   ```
-
-  Result:
+  Output:
   ```
   4 3 2 1
   ```

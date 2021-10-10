@@ -1,6 +1,3 @@
-# rust-concurrency-in-one-page
-Everything about Rust concurrency in this one page.
-
 # Fearless Concurrency
 * Concurrent vs Parallel programming:
   * Concurrent: different parts of a program execute independently

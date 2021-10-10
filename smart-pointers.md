@@ -1,6 +1,3 @@
-# rust-smart-pointers-in-one-page
-Everything about commonly used smart pointers in this one page.
-
 # Smart Pointers
 * A **pointer** is a general concept for a variable that contains an address in memory. 
   * This address refers to, or “points at,” some other data.
