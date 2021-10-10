@@ -188,6 +188,35 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   This functions returns the value `5`.
 
+## Function pointers
+* You can also pass regular functions to functions, using `fn` type.
+* The `fn` type is called a **function pointer**.
+* Example:
+  ```rust
+  fn add_one(x: i32) -> i32 {
+    x + 1
+  }
+
+  // `do_twice` function accepts a function pointer 
+  // `fn(i32) -> i32` as first parameter.
+  // This parameter will accept any function which has 
+  // `i32` as a single parameter and the return type.
+  fn do_twice(f: fn(i32) -> i32, arg: i32) -> i32 {
+      f(arg) + f(arg)
+  }
+
+  fn main() {
+      // `add_one` function is passed as argument to `do_twice`
+      let answer = do_twice(add_one, 5);
+
+      println!("The answer is: {}", answer);
+  }
+  ```
+  Output:
+  ```
+  The answer is: 12
+  ```
+
 # Comments
 * Comments start with `//`
   ```rust
@@ -1163,6 +1192,347 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ``` 
   * For `input_num` values not equal to either 1, 3, 5, or 7, the `match` expression would return `"default"` and gets stored in `num_to_str` variable.
 
+### Matching named variables
+* Example:
+  ```rust
+  let x = Some(5);
+  let y = 10;
+
+  match x {
+      Some(50) => println!("Got 50"),
+      Some(y) => println!("Matched, y = {:?}", y),
+      _ => println!("Default case, x = {:?}", x),
+  }
+
+  println!("at the end: x = {:?}, y = {:?}", x, y);
+  ```
+  Output:
+  ```
+  Matched, y = 5
+  at the end: x = Some(5), y = 10
+  ```
+  * `y` gets shadowed inside `match` arm `Some(y)` and `y` value becomes 5.
+  * If `x` value was `None`, the output would have been:
+    ```
+    Default case, x = None
+    at the end: x = None, y = 10
+    ```
+
+### Multiple patterns in `match`
+* Example:
+  ```rust
+  let x = 1;
+
+  match x {
+      1 | 2 => println!("one or two"),
+      3 => println!("three"),
+      _ => println!("anything"),
+  }
+  ```
+  Output:
+  ```
+  one or two
+  ```
+
+### Matching Ranges of Values with `..=`
+* Example with numeric range:
+  ```rust
+  let x = 5;
+
+  match x {
+      1..=5 => println!("one through five"),
+      _ => println!("something else"),
+  }
+  ```
+  If `x` is 1, 2, 3, 4, or 5, the first arm will match.
+* Example with `char` range:
+  ```rust
+  let x = 'c';
+
+  match x {
+      'a'..='j' => println!("early ASCII letter"),
+      'k'..='z' => println!("late ASCII letter"),
+      _ => println!("something else"),
+  }
+  ```
+  Output:
+  ```
+  early ASCII letter
+  ```
+
+### Destructuring structs
+* Example:
+  ```rust
+  struct Point {
+    x: i32,
+    y: i32,
+  }
+
+  fn main() {
+      let p = Point { x: 0, y: 7 };
+
+      let Point { x, y } = p;
+      assert_eq!(0, x);
+      assert_eq!(7, y);
+  }
+  ```
+* You could also create new variables when destructing structs:
+  ```rust
+  fn main() {
+    let p = Point { x: 0, y: 7 };
+
+    let Point { x: a, y: b } = p;
+    assert_eq!(0, a);
+    assert_eq!(7, b);
+  }
+  ```
+  Here, two new variables `a` and `b` are created that match the values `x` and `y`.
+* Destructuring structs in `match`:
+  ```rust
+  fn main() {
+    let p = Point { x: 0, y: 7 };
+
+    match p {
+        Point { x, y: 0 } => println!("On the x axis at {}", x),
+        Point { x: 0, y } => println!("On the y axis at {}", y),
+        Point { x, y } => println!("On neither axis: ({}, {})", x, y),
+    }
+  }
+  ```
+  Output:
+  ```
+  On the y axis at 7
+  ```
+
+### Destructuring enums
+* Example:
+  ```rust
+  enum Message {
+    Quit,
+    Move { x: i32, y: i32 },
+    Write(String),
+    ChangeColor(i32, i32, i32),
+  }
+
+  fn main() {
+      let msg = Message::ChangeColor(0, 160, 255);
+
+      match msg {
+          Message::Quit => {
+              println!("The Quit variant has no data to destructure.")
+          }
+          Message::Move { x, y } => {
+              println!(
+                  "Move in the x direction {} and in the y direction {}",
+                  x, y
+              );
+          }
+          Message::Write(text) => println!("Text message: {}", text),
+          Message::ChangeColor(r, g, b) => println!(
+              "Change the color to red {}, green {}, and blue {}",
+              r, g, b
+          ),
+      }
+  }
+  ```
+  Output:
+  ```
+  Change the color to red 0, green 160, and blue 255
+  ```
+
+## Destructuring Structs and Tuples
+* Example:
+  ```rust
+  let ((feet, inches), Point { x, y }) = ((3, 10), Point { x: 3, y: -10 });
+  ```
+  This declares and assigns the following variables: `feet` = 3, `inches` = 10, `x` = 3, `y` = -10.
+
+## Ignoring an Entire Value with `_`
+* Example:
+  ```rust
+  fn foo(_: i32, y: i32) {
+    println!("This code only uses the y parameter: {}", y);
+  }
+
+  fn main() {
+      foo(3, 4);
+  }
+  ```
+  Output:
+  ```
+  This code only uses the y parameter: 4
+  ```
+* This is useful in cases when implementing a trait when you need a certain type signature but the function body in your implementation doesn’t need one of the parameters.
+  * The compiler will then not warn about unused function parameters, as it would if you used a name instead.
+
+## Ignoring Parts of a Value with a Nested `_`
+* Example:
+  ```rust
+  let numbers = (2, 4, 8, 16, 32);
+
+  match numbers {
+      (first, _, third, _, fifth) => {
+          println!("Some numbers: {}, {}, {}", first, third, fifth)
+      }
+  }
+  ```
+  Output:
+  ```
+  Some numbers: 2, 8, 32
+  ```
+
+## Ignoring an Unused Variable by Starting Its Name with `_`
+* Example:
+  ```rust
+  fn main() {
+    let _x = 5;
+    let y = 10;
+  }
+  ```
+  * This will give us compile-time warning about not using `y`, but we don't get any warning for `_x`.
+* There's a difference between `_x` and `_`; `let _x = value` still binds `value` to the variable `_x`. For example:
+  ```rust
+  let s = Some(String::from("Hello!"));
+
+  if let Some(_s) = s {
+      println!("found a string");
+  }
+
+  println!("{:?}", s);
+  ```
+  would result in compile-time error as value `String::from("Hello!")` would move to `_s`, thereby making `s` variable after `if let` expression invalid.
+  * If you used `Some(_)` instead, the code will compile just fine.
+
+## Ignoring Remaining Parts of a Value with `..`
+* Example:
+  ```rust
+  struct Point {
+      x: i32,
+      y: i32,
+      z: i32,
+  }
+
+  let origin = Point { x: 3, y: 0, z: 0 };
+
+  match origin {
+      Point { x, .. } => println!("x is {}", x),
+  }
+  ```
+  Output:
+  ```
+  x is 3
+  ```
+* Another example:
+  ```rust
+  fn main() {
+    let numbers = (2, 4, 8, 16, 32);
+
+    match numbers {
+        (first, .., last) => {
+            println!("first: {}, last: {}", first, last);
+        }
+    }
+  }
+  ```
+  Output:
+  ```
+  first: 2, last: 32
+  ```
+* Using `..` must be unambiguous. The following code will result in compile error:
+  ```rust
+  fn main() {
+    let numbers = (2, 4, 8, 16, 32);
+
+    match numbers {
+        (.., second, ..) => {
+            println!("Some numbers: {}", second)
+        },
+    }
+  }
+  ```
+  Error:
+  ```
+    error: `..` can only be used once per tuple pattern
+  --> src/main.rs:5:22
+    |
+  5 |         (.., second, ..) => {
+    |          --          ^^ can only be used once per tuple pattern
+    |          |
+    |          previously used here
+  ```
+
+## Extra Conditionals with Match Guards
+* A **match guard** is an additional `if` condition specified after the pattern in a match arm that must also match, along with the pattern matching, for that arm to be chosen.
+* Example:
+  ```rust
+  let num = Some(4);
+
+  match num {
+      Some(x) if x < 5 => println!("less than five: {}", x),
+      Some(x) => println!("{}", x),
+      None => (),
+  }
+  ```
+  Output:
+  ```
+  less than five: 4
+  ```
+* Another example:
+  ```rust
+  fn main() {
+    let x = Some(5);
+    let y = 5;
+
+    match x {
+        Some(50) => println!("Got 50"),
+        Some(n) if n == y => println!("Matched, n = {}", n),
+        _ => println!("Default case, x = {:?}", x),
+    }
+
+    println!("at the end: x = {:?}, y = {}", x, y);
+  }
+  ```
+  Output:
+  ```
+  Matched, n = 5
+  at the end: x = Some(5), y = 5
+  ```
+  * `Some(n) if n == y` `match` arm doesn't introduce a new variable `y` inside `match` scope, and thus can use outer `y` as match guard.
+* Match guard precedence example:
+  ```rust
+  let x = 4;
+  let y = false;
+
+  match x {
+      4 | 5 | 6 if y => println!("yes"),
+      _ => println!("no"),
+  }
+  ```
+  * The precedence is `4 | 5 | 6`, followed by the match guard `if y`.
+
+## `@` bindings
+* To capture matched values in a variable, use `@` bindigs:
+  ```rust
+  enum Message {
+      Hello { id: i32 },
+  }
+
+  let msg = Message::Hello { id: 5 };
+
+  match msg {
+      Message::Hello {
+          id: id_variable @ 3..=7,
+      } => println!("Found an id in range: {}", id_variable),
+      Message::Hello { id: 10..=12 } => {
+          println!("Found an id in another range")
+      }
+      Message::Hello { id } => println!("Found some other id: {}", id),
+  }
+  ```
+  * In the above code, for some reason Rust does not store the matched value `5` inside `id` variable when it checks whether the value of `id` field after destructuring `msg` falls in `3..=7` range.
+  * To store the value matched in a given arm, use `@` binding: `id: id_variable @ 3..=7`
+  * `id_variable @` tells Rust to create a new variable named `id_variable` storing the matched value (here `5`).
+
 ## Patterns that Bind to Values
 * Match arms can bind to the parts of the values that match the pattern.
 * Example:
@@ -1197,7 +1567,7 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   * When we compare that value with each of the match arms, none of them match until we reach `Coin::Quarter(state)`. 
   * At that point, the binding for `state` will be the value `UsState::Alaska`. 
 
-## if let syntax
+## `if let` syntax
 * If you want to execute some code just for one match arm and ignore the rest, then you can use `if let` syntax.
 * Example: You have a match expression like this:
   ```rust
@@ -1218,6 +1588,138 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
       "default"
     }
     ```
+* Another example:
+  ```rust
+  fn func(favorite_color: Option<&str>, is_tuesday: bool,
+  age: Result<u8, _>) {
+    if let Some(color) = favorite_color {
+        println!("Using your favorite color, {}, as the background", color);
+    } else if let Ok(age) = age {
+        if age > 30 {
+            println!("Using purple as the background color");
+        } else {
+            println!("Using orange as the background color");
+        }
+    } else {
+        println!("Using blue as the background color");
+    }
+  }
+  ```
+  * If `favorite_color` is `Some("red")`, then the output would be `Using your favorite color, red, as the background`.
+  * If `favorite_color` is `None` and `age` is `Ok(34)`, then the output would be `Using orange as the background color`
+  * Else the output would be `Using blue as the background color`.
+
+## `while let` expression
+* Example:
+  ```rust
+  let mut stack = Vec::new();
+
+  stack.push(1);
+  stack.push(2);
+  stack.push(3);
+
+  while let Some(top) = stack.pop() {
+      println!("{}", top);
+  }
+  ```
+  Output:
+  ```
+  3
+  2
+  1
+  ```
+  * The loop will run while `stack.pop()` returns `Some(val)`.
+  * The loop stops when `stack.pop()` returns `None`.
+
+## Pattern matching in `for` loop
+* Example:
+  ```rust
+  let v = vec!['a', 'b', 'c'];
+
+  for (index, value) in v.iter().enumerate() {
+      println!("{} is at index {}", value, index);
+  }
+  ```
+  Output:
+  ```
+  a is at index 0
+  b is at index 1
+  c is at index 2
+  ```
+
+## Pattern matching in `let` statements
+* Example:
+  ```rust
+  let (x, y, z) = (1, 2, 3);
+  ```
+  This would assign x = 1, y = 2, z = 3.
+* Following would result in error:
+  ```rust
+  let (x, y) = (1, 2, 3);
+  ```
+  Output:
+  ```
+  error[E0308]: mismatched types
+  ```
+
+## Pattern matching in Function Parameters
+* Example:
+  ```rust
+  fn print_coordinates(&(x, y): &(i32, i32)) {
+    println!("Current location: ({}, {})", x, y);
+  }
+
+  fn main() {
+      let point = (3, 5);
+      print_coordinates(&point);
+  }
+  ```
+  Output:
+  ```
+  Current location: (3, 5)
+  ```
+
+## Pattern refutability
+* Patterns come in two forms: refutable and irrefutable.
+* Patterns that will match for any possible value passed are **irrefutable**.
+  * Example: `x` in statement `let x = 5`, because `x` matches anything and therefore *cannot* fail to match.
+* Patterns that can fail to match for some possible value are **refutable**.
+  * Example: `Some(x)` in `if let Some(x) = a_value` expression, because if the value of `a_value` is `None`, then the `Some(x)` pattern won't match.
+* Function parameters, `let` statements, and `for` loops can only accept irrefutable patterns, because the program cannot do anything meaningful when values don’t match.
+  * So, the following code won't compile:
+    ```rust
+    let Some(x) = some_option_value;
+    ```
+    as `Some(x) = ..` is a refutable pattern and `let` requires irrefutable patterns. So, `let` requires that `None = ` pattern to also be covered.
+  * Alternative, use `match` with `let` for above:
+    ```rust
+    let x = match {
+      Some(val) => val,
+      None => DEFAULT_VALUE
+    };
+    ```
+    
+* The `if let` and `while let` expressions accept refutable and irrefutable patterns, but the compiler warns against irrefutable patterns.
+  * This is because they are conditionals, so by definition they’re intended to handle possible failure.
+  * Example:
+    ```rust
+    if let Some(x) = some_option_value {
+        println!("{}", x);
+    }
+    ```
+  * You could do something like:
+    ```rust
+    if let x = 5 {
+        println!("{}", x);
+    };
+    ```
+    but compiler would give you a warning:
+    ```
+    warning: irrefutable `if let` pattern
+    ```
+    because using irrefutable pattern with `if let` is useless.
+* Pattern refutability explains why `match` arms must use refutable patterns, except for the last arm, which should match any remaining values with an irrefutable pattern. 
+
 
 # Packages, Crates and Modules
 
@@ -2362,7 +2864,13 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
     y: U,
   }
   ```
-  This struct would support something like `let p = Point { x: 5, y: 4.0 };`
+  This struct would support something like 
+  ```rust
+  let p = Point { 
+    x: 5, 
+    y: 4.0 
+  };
+  ```
 
 ## Enum with Generic Types
 * Example with single generic type:
