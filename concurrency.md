@@ -441,6 +441,9 @@
 
 ## Allowing Access from Multiple Threads with `Sync`
 * The `Sync` marker trait indicates that the immutable reference `&T` of the type `T` implementing `Sync` can be safely sent to multiple threads.
+  * Here, **safely** means that the reference to the type can be shared safely between threads without worrying about any data race issue.
+  * Types like `Rc` which allows interior mutability even with immutable reference `&Rc<T>` cannot be safely shared between the threads and hence does not implement `Sync` trait.
+* The `Sync` trait is automatically implemented by the compiler if the type and its constituent types implement `Sync` trait.
 * Types implementing `Sync`:
   * Primitive types
   * Types composed of `Sync` types

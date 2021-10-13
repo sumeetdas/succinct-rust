@@ -272,9 +272,10 @@ x = 2.0 * 5 as f32; // error: expected integer, found `f32`
   ```
   Output:
   ```
-  4 3 2 1
+  3 2 1
   ```
-  Here, `1..4` creates an array with values between 1 and 4, and calling `rev` function reverses the order. Then use for loop to iterate through the array.
+  Here, `1..4` creates an array with values between 1 and 3 (excluding 4), and calling `rev` function reverses the order. Then use for loop to iterate through the array.
+  * Ranges like `1..4` are end-exclusive. Here, 4 is ignored, and the `for` loop runs on values 1, 2 and 3.
 
 # Ownership
 
