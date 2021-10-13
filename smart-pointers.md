@@ -54,7 +54,7 @@
   ```
   Compiling this code would give an error:
   ```
-    error[E0072]: recursive type `List` has infinite size
+    error[E0072]: recursive type `LinkedList` has infinite size
   --> src/main.rs:1:1
     |
   1 | enum LinkedList {
